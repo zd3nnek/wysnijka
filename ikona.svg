@@ -1,15 +1,21 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <!-- Ikona Wyśnijki: śpiący miś w szlafmycy (propozycja nr 6, wybrana 2026-10-24) -->
   <defs>
     <linearGradient id="t" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#2b2847"/><stop offset="1" stop-color="#6d5f95"/></linearGradient>
   </defs>
   <rect width="512" height="512" rx="112" fill="url(#t)"/>
-  <circle cx="110" cy="120" r="6" fill="#fff8d6"/><circle cx="400" cy="110" r="5" fill="#fff8d6"/><circle cx="420" cy="230" r="4" fill="#fff8d6"/><circle cx="90" cy="260" r="4" fill="#fff8d6"/>
-  <g transform="translate(256 230)">
-    <circle r="120" fill="#fbefc6"/>
-    <path d="M-62 -6 q22 22 44 0" stroke="#b99a63" stroke-width="10" fill="none" stroke-linecap="round"/>
-    <path d="M18 -6 q22 22 44 0" stroke="#b99a63" stroke-width="10" fill="none" stroke-linecap="round"/>
-    <circle cx="-62" cy="34" r="17" fill="#f3b6c8" opacity=".7"/><circle cx="62" cy="34" r="17" fill="#f3b6c8" opacity=".7"/>
-    <path d="M-18 46 q18 14 36 0" stroke="#b99a63" stroke-width="8" fill="none" stroke-linecap="round"/>
+  <circle cx="110" cy="120" r="6" fill="#fff8d6"/><circle cx="410" cy="100" r="5" fill="#fff8d6"/>
+  <circle cx="430" cy="250" r="4" fill="#fff8d6" opacity=".8"/><circle cx="80" cy="280" r="4" fill="#fff8d6" opacity=".8"/>
+  <g transform="translate(256 290)">
+    <circle cx="-92" cy="-70" r="40" fill="#e3bfa0"/><circle cx="92" cy="-70" r="40" fill="#e3bfa0"/>
+    <circle cx="-92" cy="-70" r="20" fill="#f3c3d8"/><circle cx="92" cy="-70" r="20" fill="#f3c3d8"/>
+    <circle r="120" fill="#e3bfa0"/>
+    <path d="M-104 -60 Q-20 -250 150 -190 Q60 -150 104 -60 Z" fill="#acd5f0"/>
+    <path d="M-112 -60 Q0 -96 112 -60" stroke="#f7f2ff" stroke-width="22" fill="none" stroke-linecap="round"/>
+    <circle cx="152" cy="-190" r="22" fill="#f7f2ff"/>
+    <path d="M-66 0 q22 22 44 0" stroke="#6b4f45" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <path d="M22 0 q22 22 44 0" stroke="#6b4f45" stroke-width="9" fill="none" stroke-linecap="round"/>
+    <ellipse cx="0" cy="52" rx="50" ry="38" fill="#f4dcc6"/><ellipse cx="0" cy="38" rx="16" ry="11" fill="#6b4f45"/>
+    <circle cx="-78" cy="34" r="14" fill="#f3b6c8" opacity=".7"/><circle cx="78" cy="34" r="14" fill="#f3b6c8" opacity=".7"/>
   </g>
-  <path d="M0 420 Q130 360 256 400 T512 390 V512 H0 Z" fill="#9fcdbd" opacity=".75"/>
 </svg>

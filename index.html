@@ -10,6 +10,7 @@
 <meta name="apple-mobile-web-app-title" content="Wyśnijka">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="ikona.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="ikona-180.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
@@ -154,6 +155,9 @@ input[type=range] { padding: 0 !important; accent-color: var(--lawenda); backgro
 .pozycja .nazwa { flex: 1; min-width: 0; font-weight: 700; line-height: 1.2; }
 .pozycja .nazwa small { display: block; font-weight: 500; color: var(--tekst2); }
 .pozycja button { font-size: 1.3rem; padding: 6px; }
+.chipy { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.chip { background: var(--karta); border: 1px solid var(--karta-ramka); border-radius: 999px; padding: 8px 14px; font-weight: 700; }
+.chip.aktywny { background: var(--lawenda); color: #2b2847; border-color: var(--lawenda); }
 .modal { position: fixed; inset: 0; background: rgba(10,6,30,.7); display: none; align-items: center; justify-content: center; z-index: 60; padding: 16px; }
 .modal.aktywny { display: flex; }
 .modal .karta { max-width: 360px; background: var(--niebo2); }
@@ -194,7 +198,16 @@ a { color: var(--blekit); }
     <button class="tryb cicho" id="trybCicho"><span class="duza">🤫</span><b>Po cichu</b><span class="opis">dotykam obrazków</span></button>
   </div>
   <p class="mala" id="trybInfo"></p>
+  <button class="przycisk mieta" id="doBiblioteki">📚 Gotowe bajki</button>
   <button class="przycisk cichy" id="doUlubionych">⭐ Zapisane bajki</button>
+</section>
+
+<!-- gotowe bajki (bajki.js) -->
+<section class="ekran" id="ekranBiblioteka">
+  <h2>Gotowe bajki</h2>
+  <div class="chipy" id="kategorie"></div>
+  <div class="karta" id="listaGotowych"></div>
+  <button class="przycisk cichy" id="bibWroc">← Wróć</button>
 </section>
 
 <!-- pytania -->
@@ -279,6 +292,7 @@ a { color: var(--blekit); }
     <h3>Lektor</h3>
     <label class="wiersz">Głos <select id="ustGlos"></select></label>
     <label class="wiersz">Tempo czytania <input id="ustTempo" type="range" min="0.6" max="1.1" step="0.05"></label>
+    <label class="wiersz">Ton głosu (niżej = spokojniej) <input id="ustTon" type="range" min="0.7" max="1.2" step="0.05"></label>
     <button class="przycisk cichy" id="testGlosu">🔊 Posłuchaj lektora</button>
   </div>
   <div class="karta">
@@ -311,6 +325,7 @@ a { color: var(--blekit); }
 
 <div id="zaslona"></div>
 
+<script src="bajki.js"></script>
 <script type="module">
 // ===== stałe =====
 const SDK_URL = 'https://esm.sh/@anthropic-ai/sdk@1.3.0';
@@ -364,7 +379,7 @@ function wczytaj(k, dom) { try { const v = localStorage.getItem(PREFIKS + k); re
 function zapisz(k, v) { try { localStorage.setItem(PREFIKS + k, JSON.stringify(v)); } catch {} }
 
 const ust = Object.assign({
-  imie: '', wiek: 3, klucz: '', model: 'claude-opus-5-5', minuty: 15, tempo: 0.85, glos: '', szum: 0.3, gotowe: false,
+  imie: '', wiek: 3, klucz: '', model: 'claude-opus-5-5', minuty: 15, tempo: 0.85, ton: 1, glos: '', szum: 0.3, gotowe: false,
 }, wczytaj('ustawienia', {}));
 const zapiszUst = () => zapisz('ustawienia', ust);
 let historia = wczytaj('historia', []);
@@ -397,43 +412,79 @@ function przyciemnij(po) {
 }
 $('#zaslona').addEventListener('click', () => przyciemnij(8000));
 
+// ===== aplikacja na Androida: lektor i słuchanie z telefonu (aplikacja-android\, wtyczka „Natywne”) =====
+// Bez biblioteki @capacitor/core nie ma registerPlugin — warstwa natywna wstawia wtyczkę do Capacitor.Plugins.
+const CAP = window.Capacitor;
+const NAT = CAP && CAP.isNativePlatform && CAP.isNativePlatform() && CAP.Plugins && CAP.Plugins.Natywne || null;
+
 // ===== lektor (synteza mowy) =====
-let glosy = [];
-function zaladujGlosy() {
-  if (!('speechSynthesis' in window)) return;
-  glosy = speechSynthesis.getVoices().filter(v => (v.lang || '').toLowerCase().replace('_', '-').startsWith('pl'));
+let glosy = [];        // [{ nazwa, opis }] — w aplikacji głosy Androida, w przeglądarce głosy przeglądarki
+let glosyWeb = [];
+async function zaladujGlosy() {
+  if (NAT) {
+    try { glosy = (await NAT.glosy()).glosy || []; } catch { glosy = []; }
+  } else {
+    if (!('speechSynthesis' in window)) return;
+    glosyWeb = speechSynthesis.getVoices().filter(v => (v.lang || '').toLowerCase().replace('_', '-').startsWith('pl'));
+    glosy = glosyWeb.map(v => ({ nazwa: v.voiceURI, opis: v.name }));
+  }
   const sel = $('#ustGlos'); sel.innerHTML = '';
   if (!glosy.length) sel.innerHTML = '<option value="">(domyślny głos telefonu)</option>';
-  for (const v of glosy) { const o = document.createElement('option'); o.value = v.voiceURI; o.textContent = v.name; sel.appendChild(o); }
-  const w = wybranyGlos(); if (w) sel.value = w.voiceURI;
+  for (const g of glosy) { const o = document.createElement('option'); o.value = g.nazwa; o.textContent = g.opis; sel.appendChild(o); }
+  if (glosy.some(g => g.nazwa === ust.glos)) sel.value = ust.glos;
 }
-if ('speechSynthesis' in window) { speechSynthesis.onvoiceschanged = zaladujGlosy; zaladujGlosy(); }
-function wybranyGlos() {
-  return glosy.find(v => v.voiceURI === ust.glos) || glosy.find(v => /zosia|ewa|paulina|female|kobiet/i.test(v.name)) || glosy[0] || null;
+if (NAT) zaladujGlosy();
+else if ('speechSynthesis' in window) { speechSynthesis.onvoiceschanged = zaladujGlosy; zaladujGlosy(); }
+function glosWeb() {
+  return glosyWeb.find(v => v.voiceURI === ust.glos) || glosyWeb.find(v => /zosia|ewa|paulina|female|kobiet/i.test(v.name)) || glosyWeb[0] || null;
 }
 function powiedz(tekst, { glosnosc = 1, tempo = ust.tempo } = {}) {
   return new Promise(res => {
-    if (!('speechSynthesis' in window) || !tekst) return res();
-    const u = new SpeechSynthesisUtterance(tekst);
-    u.lang = 'pl-PL'; const g = wybranyGlos(); if (g) u.voice = g;
-    u.rate = tempo; u.pitch = 1.05; u.volume = glosnosc;
+    if (!tekst) return res();
     let koniec = false;
     const fin = () => { if (!koniec) { koniec = true; clearTimeout(straz); res(); } };
-    u.onend = fin; u.onerror = fin;
-    // niektóre przeglądarki gubią onend — straż kończy zdanie po czasie
+    // straż: gdyby silnik zgubił koniec zdania, opowieść i tak idzie dalej
     const straz = setTimeout(fin, 5000 + tekst.length * 130 / tempo);
+    if (NAT) { NAT.mow({ tekst, glos: ust.glos, tempo, ton: ust.ton, glosnosc }).then(fin, fin); return; }
+    if (!('speechSynthesis' in window)) return fin();
+    const u = new SpeechSynthesisUtterance(tekst);
+    u.lang = 'pl-PL'; const g = glosWeb(); if (g) u.voice = g;
+    u.rate = tempo; u.pitch = ust.ton; u.volume = glosnosc;
+    u.onend = fin; u.onerror = fin;
     speechSynthesis.speak(u);
   });
 }
+function ucisz() {
+  if (NAT) { NAT.cisza().catch(() => {}); return; }
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+}
 function odblokujMowe() {
+  if (NAT) return;
   try { if ('speechSynthesis' in window) { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } } catch {}
 }
 
 // ===== słuchanie (rozpoznawanie mowy) =====
 const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+const MOZE_SLUCHAC = !!(NAT || SR);
 let stopSluchania = null, anulujPotw = null;
 const zatrzymajSluchanie = () => { if (stopSluchania) stopSluchania(); };
+function sluchajNatywnie(ms) {
+  return new Promise(res => {
+    let gotowe = false, uchwyt = null;
+    const fin = v => {
+      if (gotowe) return; gotowe = true; stopSluchania = null;
+      if (uchwyt) uchwyt.remove();
+      $('#mikrofon').classList.remove('slucha'); res(v);
+    };
+    stopSluchania = () => { NAT.przerwijSluchanie().catch(() => {}); fin(null); };
+    Promise.resolve(NAT.addListener('uslyszane', d => { if (!gotowe && d && d.tekst) $('#uslyszane').textContent = `„${d.tekst}”`; }))
+      .then(u => { uchwyt = u; if (gotowe) u.remove(); });
+    $('#mikrofon').classList.add('slucha');
+    NAT.sluchaj({ ms }).then(r => fin(r && r.blad === 'zgoda' ? { blad: 'zgoda' } : ((r && r.tekst || '').trim() || null)), () => fin(null));
+  });
+}
 function sluchaj(ms = 9000) {
+  if (NAT) return sluchajNatywnie(ms);
   return new Promise(res => {
     if (!SR) return res(null);
     let r; try { r = new SR(); } catch { return res(null); }
@@ -485,14 +536,14 @@ function zapytaj({ pytanie, mowione, propozycje = [], wielokrotny = false }) {
     $('#uslyszane').textContent = ''; $('#info').textContent = ''; $('#poleTekst').value = '';
     $('#myslenie').hidden = true; $('#potw').hidden = true;
     $('#formTekst').hidden = trybGlosowy;
-    $('#mikrofon').hidden = !trybGlosowy || !SR;
+    $('#mikrofon').hidden = !trybGlosowy || !MOZE_SLUCHAC;
     const kaf = $('#kafelki'); kaf.innerHTML = ''; kaf.hidden = false;
     const wybrane = new Set();
     let zalatwione = false;
     const zakoncz = tekst => {
       if (zalatwione) return; zalatwione = true;
       zatrzymajSluchanie(); if (anulujPotw) anulujPotw();
-      if ('speechSynthesis' in window) speechSynthesis.cancel();
+      ucisz();
       $('#gotowe').hidden = true; resolve(tekst);
     };
     for (const p of propozycje) {
@@ -635,7 +686,19 @@ function wytnijZdania(s, final) {
   }
   s.bufor = s.bufor.slice(ostatni);
   if (final && /\p{L}/u.test(s.bufor)) { s.kolejka.push(czysc(s.bufor)); s.bufor = ''; }
-  budz(s);
+  budz(s); wyslij(s);
+}
+
+// W aplikacji bajkę czyta telefon (UslugaBajki.kt) — także przy zgaszonym ekranie. Strona dosyła mu zdania.
+function wyslij(s) {
+  if (!s || !s.nat || s.przerwane) return;
+  const paczka = [];
+  if (!s.tytulWyslany && s.tytul) { paczka.push(s.tytul + '.'); s.tytulWyslany = true; $('#tytul').textContent = s.tytul; }
+  if (s.tytulWyslany) { paczka.push(...s.kolejka.slice(s.wyslane)); s.wyslane = s.kolejka.length; }
+  const koniec = !!s.koniec && s.tytulWyslany && !s.koniecWyslany;
+  if (koniec) s.koniecWyslany = true;
+  if (!paczka.length && !koniec) return;
+  s.lancuch = s.lancuch.then(() => NAT.bajkaZdania({ zdania: paczka, koniec })).catch(() => {});
 }
 
 function dodaj(s, d, final = false) {
@@ -665,7 +728,10 @@ async function strumien(s) {
     const m = await st.finalMessage();
     if (m.stop_reason === 'refusal') s.blad = 'Model nie chciał napisać tej bajki. Spróbuj innych odpowiedzi.';
   } catch (e) { if (!s.przerwane) { console.warn(e); s.blad = opisBledu(e); } }
-  dodaj(s, '', true); s.koniec = true; budz(s);
+  dodaj(s, '', true);
+  if (s.blad && s.kolejka.length) s.kolejka.push('I na tym kończy się dzisiejsza bajka. Dobranoc.');
+  s.koniec = true; budz(s); wyslij(s);
+  if (s.nat && s.blad && !s.kolejka.length && s.koniecNat) s.koniecNat('blad');
   if (!s.blad && !s.przerwane && s.tytul && s.kolejka.length > 3) zapiszBajke(s);
 }
 
@@ -690,7 +756,7 @@ Dobranoc, ${imie}.`;
 
 async function symulujStrumien(s, tekst) {
   for (let i = 0; i < tekst.length && !s.przerwane; i += 24) { dodaj(s, tekst.slice(i, i + 24)); await czekaj(40); }
-  dodaj(s, '', true); s.koniec = true; budz(s);
+  dodaj(s, '', true); s.koniec = true; budz(s); wyslij(s);
 }
 
 function wyciszanie(s) {
@@ -720,7 +786,7 @@ async function czytaj(s) {
 }
 
 async function opowiadaj({ odpowiedzi = null, emoji = ['🐰', '🐻'], gotowa = null }) {
-  if (stan) { stan.przerwane = true; if (stan.anuluj) stan.anuluj(); }
+  if (stan) { stan.przerwane = true; if (stan.anuluj) stan.anuluj(); if (stan.koniecNat) stan.koniecNat('stop'); }
   ostatnieOdpowiedzi = odpowiedzi;
   pokaz('ekranBajka');
   rysujScene($('#scenaBajki'), emoji, false);
@@ -728,15 +794,26 @@ async function opowiadaj({ odpowiedzi = null, emoji = ['🐰', '🐻'], gotowa =
   $('#zdanie').textContent = ''; $('#pauza').textContent = '⏸';
   const s = stan = { tytul: '', surowy: '', tekstOd: 0, bufor: '', kolejka: [], koniec: false, blad: null, przerwane: false,
     pauza: false, slowa: 0, cel: ust.minuty * SLOW_NA_MINUTE, budzik: null, anuluj: null, odpowiedzi, emoji };
-  if (gotowa) { s.tytul = gotowa.tytul; s.bufor = gotowa.tekst + '\n'; wytnijZdania(s, true); s.koniec = true; }
+  if (NAT) {
+    s.nat = true; s.wyslane = 0;
+    s.lancuch = NAT.bajkaStart({ cel: s.cel, glos: ust.glos, tempo: ust.tempo, ton: ust.ton, szumMinuty: MINUTY_SZUMU, szumGlosnosc: ust.szum }).catch(() => {});
+  }
+  const koniecNat = NAT ? new Promise(res => { s.koniecNat = res; }) : null;
+  if (gotowa) { s.tytul = gotowa.tytul; s.bufor = gotowa.tekst + '\n'; wytnijZdania(s, true); s.koniec = true; wyslij(s); }
   else {
     if (trybGlosowy) powiedz('Już wymyślam bajkę. Ułóż się wygodnie.');
     if (ust.klucz) strumien(s); else symulujStrumien(s, bajkaProbna(odpowiedzi));
   }
+  if (NAT) {
+    const wynik = await koniecNat;
+    if (s.przerwane || wynik === 'stop') return;
+    if (wynik === 'blad') { NAT.bajkaStop().catch(() => {}); pokazBlad(s.blad); return; }
+    zasypianie(emoji, false);   // szum włącza już sam telefon
+    return;
+  }
   await czytaj(s);
   if (s.przerwane) return;
   if (s.blad && s.slowa === 0) { pokazBlad(s.blad); return; }
-  if (s.blad) await powiedz('I na tym kończy się dzisiejsza bajka. Dobranoc.', { glosnosc: 0.6 });
   await czekaj(1500);
   if (!s.przerwane) zasypianie(emoji);
 }
@@ -757,17 +834,19 @@ function pokazBlad(tekst) {
 
 // ===== zasypianie =====
 const NAZWY_SZUMU = { morze: '🌊 Szumi morze…', deszcz: '🌧️ Pada cichy deszczyk…', las: '🌲 Szumi las…' };
-function zasypianie(emoji) {
-  stan = null;
-  pokaz('ekranSen');
-  rysujScene($('#scenaSnu'), emoji, true);
-  const r = Szum.graj(MINUTY_SZUMU);
+function opisSzumu(r) {
   $('#senOpis').textContent = r ? NAZWY_SZUMU[r] : '';
   $('#szumWl').textContent = r ? '🔇 Cisza' : '▶ Włącz szum';
 }
+function zasypianie(emoji, startujSzum = true) {
+  stan = null;
+  pokaz('ekranSen');
+  rysujScene($('#scenaSnu'), emoji, true);
+  opisSzumu(startujSzum ? Szum.graj(MINUTY_SZUMU) : natSzum);
+}
 
 // ===== dźwięki do snu, generowane na żywo (bez plików) =====
-const Szum = (() => {
+const SzumWeb = (() => {
   let ctx = null, master = null, aktywne = [], timery = [], koniecT = null, grane = false;
   const bufory = {};
   function kontekst() {
@@ -885,6 +964,14 @@ const Szum = (() => {
   }
   return { graj, zatrzymaj, odblokuj, gra: () => grane };
 })();
+// W aplikacji szum gra telefon (UslugaBajki.kt) — także przy zgaszonym ekranie; rodzaj przychodzi zdarzeniem „szum”.
+let natSzum = null;
+const Szum = NAT ? {
+  graj: (minuty = MINUTY_SZUMU, rodzaj = null) => { NAT.szum({ on: true, rodzaj, minuty, glosnosc: ust.szum }).catch(() => {}); return null; },
+  zatrzymaj: () => { NAT.szum({ on: false }).catch(() => {}); },
+  odblokuj: () => {},
+  gra: () => !!natSzum,
+} : SzumWeb;
 
 // ===== scena (księżyc, gwiazdy, wzgórze, zwierzątka) =====
 function rysujScene(el, emoji, spia) {
@@ -969,6 +1056,51 @@ function rysujListe(el, rodzic) {
   }
 }
 
+// ===== zdarzenia z telefonu (czytanie i szum w tle) =====
+if (NAT) {
+  NAT.addListener('zdanie', d => { if (stan && stan.nat && d) $('#zdanie').textContent = d.tekst; });
+  NAT.addListener('koniecBajki', () => { if (stan && stan.nat && stan.koniecNat) stan.koniecNat('ok'); });
+  NAT.addListener('pauza', d => {
+    if (!stan || !stan.nat || !d) return;
+    stan.pauza = !!d.on; $('#pauza').textContent = d.on ? '▶️' : '⏸';
+    if (d.powod === 'telefon') $('#zdanie').textContent = '📞 Pauza na czas rozmowy…';
+  });
+  NAT.addListener('szum', d => { natSzum = d && d.gra ? d.rodzaj : null; if ($('#ekranSen').classList.contains('aktywny')) opisSzumu(natSzum); });
+  // Po powrocie do aplikacji (ekran był zgaszony): jeśli bajka skończyła się w tle — od razu ekran snu.
+  document.addEventListener('visibilitychange', async () => {
+    if (document.visibilityState !== 'visible' || !stan || !stan.nat || !stan.koniecNat) return;
+    const st = await NAT.bajkaStan().catch(() => null);
+    if (st && st.skonczona && stan && stan.koniecNat) stan.koniecNat('ok');
+  });
+}
+
+// ===== gotowe bajki (bajki.js — bez internetu i bez klucza) =====
+const GOTOWE = window.BAJKI || [];
+let wybranaKat = 'Wszystkie';
+function rysujBiblioteke() {
+  const kat = ['Wszystkie', ...new Set(GOTOWE.map(b => b.kat))];
+  const k = $('#kategorie'); k.innerHTML = '';
+  for (const n of kat) {
+    const c = document.createElement('button'); c.className = 'chip' + (n === wybranaKat ? ' aktywny' : ''); c.textContent = n;
+    c.onclick = () => { wybranaKat = n; rysujBiblioteke(); };
+    k.appendChild(c);
+  }
+  const l = $('#listaGotowych'); l.innerHTML = '';
+  for (const b of GOTOWE.filter(b => wybranaKat === 'Wszystkie' || b.kat === wybranaKat)) {
+    const w = document.createElement('div'); w.className = 'pozycja';
+    w.innerHTML = '<span class="em"></span><span class="nazwa"><span class="t"></span><small></small></span>';
+    w.querySelector('.em').textContent = b.emoji[0];
+    w.querySelector('.t').textContent = b.tytul;
+    w.querySelector('small').textContent = `${b.kat} · ok. ${Math.max(1, Math.round(liczSlowa(b.tekst) / SLOW_NA_MINUTE))} min`;
+    const gr = document.createElement('button'); gr.textContent = '▶️'; gr.setAttribute('aria-label', 'Czytaj');
+    gr.onclick = () => { odblokuj(); opowiadaj({ gotowa: b, emoji: b.emoji }); };
+    w.appendChild(gr);
+    l.appendChild(w);
+  }
+}
+$('#doBiblioteki').onclick = () => { rysujBiblioteke(); pokaz('ekranBiblioteka'); };
+$('#bibWroc').onclick = () => ekranTrybu();
+
 // ===== start i przyciski =====
 function odblokuj() { odblokujMowe(); Szum.odblokuj(); chceBlokady = true; nieGas(); }
 
@@ -977,9 +1109,10 @@ function ekranTrybu() {
   $('#powitanie').textContent = ust.imie ? `Dobry wieczór, ${ust.imie}!` : 'Dobry wieczór!';
   const uwagi = [];
   if (!ust.klucz) uwagi.push('Tryb próbny (bez klucza API) — bajka jest gotowa i krótka.');
-  if (!SR) uwagi.push('Ta przeglądarka nie rozpoznaje mowy — w trybie głosowym pytania są czytane, odpowiedź dotykiem.');
+  if (!MOZE_SLUCHAC) uwagi.push('Ta przeglądarka nie rozpoznaje mowy — w trybie głosowym pytania są czytane, odpowiedź dotykiem.');
   $('#trybInfo').textContent = uwagi.join(' ');
   $('#doUlubionych').hidden = !historia.length;
+  $('#doBiblioteki').hidden = !(window.BAJKI && window.BAJKI.length);
   pokaz('ekranTryb');
 }
 
@@ -1010,16 +1143,21 @@ $('#pauza').onclick = () => {
   if (!stan) return;
   stan.pauza = !stan.pauza;
   $('#pauza').textContent = stan.pauza ? '▶️' : '⏸';
-  if (stan.pauza && 'speechSynthesis' in window) speechSynthesis.cancel();
+  if (stan.nat) { NAT.bajkaPauza({ on: stan.pauza }).catch(() => {}); return; }
+  if (stan.pauza) ucisz();
 };
 $('#stop').onclick = () => {
-  if (stan) { stan.przerwane = true; if (stan.anuluj) stan.anuluj(); budz(stan); stan = null; }
-  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  if (stan) {
+    stan.przerwane = true; if (stan.anuluj) stan.anuluj(); budz(stan);
+    if (stan.nat) { NAT.bajkaStop().catch(() => {}); if (stan.koniecNat) stan.koniecNat('stop'); }
+    stan = null;
+  }
+  ucisz();
   ekranTrybu();
 };
 $('#szumWl').onclick = () => {
-  if (Szum.gra()) { Szum.zatrzymaj(); $('#szumWl').textContent = '▶ Włącz szum'; $('#senOpis').textContent = ''; }
-  else { Szum.odblokuj(); const r = Szum.graj(MINUTY_SZUMU); $('#szumWl').textContent = '🔇 Cisza'; $('#senOpis').textContent = r ? NAZWY_SZUMU[r] : ''; }
+  if (Szum.gra()) { Szum.zatrzymaj(); opisSzumu(null); }
+  else { Szum.odblokuj(); const r = Szum.graj(MINUTY_SZUMU); if (r || !NAT) opisSzumu(r); }
 };
 $('#jeszczeRaz').onclick = () => ekranTrybu();
 $('#doUlubionych').onclick = () => { rysujListe($('#listaBajek'), false); pokaz('ekranUlubione'); };
@@ -1040,13 +1178,13 @@ $('#powStart').onclick = () => {
 // ustawienia
 function wypelnijUstawienia() {
   $('#ustImie').value = ust.imie; $('#ustWiek').value = ust.wiek; $('#ustMinuty').value = ust.minuty;
-  $('#ustModel').value = ust.model; $('#ustKlucz').value = ust.klucz; $('#ustTempo').value = ust.tempo; $('#ustSzum').value = ust.szum;
+  $('#ustModel').value = ust.model; $('#ustKlucz').value = ust.klucz; $('#ustTempo').value = ust.tempo; $('#ustTon').value = ust.ton; $('#ustSzum').value = ust.szum;
   zaladujGlosy();
   rysujListe($('#listaUst'), true);
 }
 $('#doUstawien').onclick = async () => { if (await bramka()) { wypelnijUstawienia(); pokaz('ekranUstawienia'); } };
 const pola = { ustImie: v => ust.imie = v.trim(), ustWiek: v => ust.wiek = +v, ustMinuty: v => ust.minuty = +v, ustModel: v => ust.model = v,
-  ustKlucz: v => ust.klucz = v.trim(), ustTempo: v => ust.tempo = +v, ustSzum: v => ust.szum = +v, ustGlos: v => ust.glos = v };
+  ustKlucz: v => ust.klucz = v.trim(), ustTempo: v => ust.tempo = +v, ustTon: v => ust.ton = +v, ustSzum: v => ust.szum = +v, ustGlos: v => ust.glos = v };
 for (const [id, f] of Object.entries(pola)) $('#' + id).addEventListener('change', e => { f(e.target.value); zapiszUst(); });
 $('#testGlosu').onclick = () => { odblokujMowe(); powiedz(`Dawno, dawno temu, za siedmioma górami, mieszkał sobie mały jeżyk.`); };
 document.querySelectorAll('[data-szum]').forEach(b => b.onclick = () => { Szum.odblokuj(); Szum.graj(1, b.dataset.szum); });
