@@ -155,9 +155,19 @@ input[type=range] { padding: 0 !important; accent-color: var(--lawenda); backgro
 .pozycja .nazwa { flex: 1; min-width: 0; font-weight: 700; line-height: 1.2; }
 .pozycja .nazwa small { display: block; font-weight: 500; color: var(--tekst2); }
 .pozycja button { font-size: 1.3rem; padding: 6px; }
-.chipy { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
-.chip { background: var(--karta); border: 1px solid var(--karta-ramka); border-radius: 999px; padding: 8px 14px; font-weight: 700; }
-.chip.aktywny { background: var(--lawenda); color: #2b2847; border-color: var(--lawenda); }
+.kafle-kat { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; width: 100%; }
+@media (min-width: 560px) { .kafle-kat { grid-template-columns: repeat(3, 1fr); } }
+.kafel-kat {
+  border-radius: 22px; overflow: hidden; background: var(--karta); border: 1px solid var(--karta-ramka);
+  display: flex; flex-direction: column; text-align: left; box-shadow: var(--cien); transition: transform .15s;
+}
+.kafel-kat:active { transform: scale(.96); }
+.kafel-kat svg { display: block; width: 100%; height: auto; }
+.kafel-kat b { font-size: 1.02rem; padding: 8px 12px 0; }
+.kafel-kat small { color: var(--tekst2); padding: 0 12px 10px; font-size: .82rem; }
+.naglowek-kat { width: 100%; max-width: 360px; border-radius: 24px; overflow: hidden; position: relative; }
+.naglowek-kat svg { display: block; width: 100%; height: auto; }
+.naglowek-kat h2 { position: absolute; left: 0; right: 0; bottom: 10px; text-shadow: 0 2px 8px rgba(0,0,0,.5); }
 .modal { position: fixed; inset: 0; background: rgba(10,6,30,.7); display: none; align-items: center; justify-content: center; z-index: 60; padding: 16px; }
 .modal.aktywny { display: flex; }
 .modal .karta { max-width: 360px; background: var(--niebo2); }
@@ -202,12 +212,17 @@ a { color: var(--blekit); }
   <button class="przycisk cichy" id="doUlubionych">⭐ Zapisane bajki</button>
 </section>
 
-<!-- gotowe bajki (bajki.js) -->
+<!-- gotowe bajki (bajki.js): kafelki kategorii → lista bajek -->
 <section class="ekran" id="ekranBiblioteka">
   <h2>Gotowe bajki</h2>
-  <div class="chipy" id="kategorie"></div>
-  <div class="karta" id="listaGotowych"></div>
+  <p class="podtytul">Wybierz, o czym ma być bajka</p>
+  <div class="kafle-kat" id="kategorie"></div>
   <button class="przycisk cichy" id="bibWroc">← Wróć</button>
+</section>
+<section class="ekran" id="ekranKategoria">
+  <div class="naglowek-kat" id="katNaglowek"></div>
+  <div class="karta" id="listaGotowych"></div>
+  <button class="przycisk cichy" id="katWroc">← Wszystkie kategorie</button>
 </section>
 
 <!-- pytania -->
@@ -238,6 +253,7 @@ a { color: var(--blekit); }
   <div class="sterowanie">
     <button class="kolko" id="pauza" aria-label="Pauza">⏸</button>
     <button class="kolko" id="stop" aria-label="Zakończ">⏹</button>
+    <button class="kolko" id="bajkaUstawienia" aria-label="Ustawienia lektora (dla rodzica)">⚙️</button>
   </div>
 </section>
 
@@ -529,6 +545,7 @@ function potwierdz(u) {
 }
 
 // ===== jedno pytanie: obrazki, pisanie albo głos =====
+let anulujPytanie = null, sesjaPytan = 0;
 function zapytaj({ pytanie, mowione, propozycje = [], wielokrotny = false }) {
   return new Promise(resolve => {
     pokaz('ekranPytanie');
@@ -541,7 +558,7 @@ function zapytaj({ pytanie, mowione, propozycje = [], wielokrotny = false }) {
     const wybrane = new Set();
     let zalatwione = false;
     const zakoncz = tekst => {
-      if (zalatwione) return; zalatwione = true;
+      if (zalatwione) return; zalatwione = true; anulujPytanie = null;
       zatrzymajSluchanie(); if (anulujPotw) anulujPotw();
       ucisz();
       $('#gotowe').hidden = true; resolve(tekst);
@@ -559,6 +576,7 @@ function zapytaj({ pytanie, mowione, propozycje = [], wielokrotny = false }) {
       };
       kaf.appendChild(b);
     }
+    anulujPytanie = () => zakoncz(null);   // „Wstecz” w trakcie pytania
     $('#gotowe').hidden = true;
     $('#gotowe').onclick = () => zakoncz([...wybrane].join(', '));
     $('#formTekst').onsubmit = e => { e.preventDefault(); const v = $('#poleTekst').value.trim(); if (v) zakoncz(v); };
@@ -638,7 +656,8 @@ Forma (tekst czyta maszyna):
 - Pierwsza linia: sam tytuł bajki, bez cudzysłowów i bez słowa „Tytuł”. Potem pusta linia i treść.
 - Bez nagłówków, list, gwiazdek, emoji i markdownu. Akapity oddzielaj pustą linią.
 - Liczby i godziny zapisuj słowami, bez skrótów.
-- Dialogi z myślnikiem. Wyrazy dźwiękonaśladowcze mile widziane (szu-szu, plum, chrup-chrup).
+- Dialogi z myślnikiem.
+- Bez wyrazów dźwiękonaśladowczych (szszsz, plum, tup-tup, kap-kap) — lektor czyta je sztucznie. Dźwięki opisuj słowami, np. „wiatr cicho szumiał w liściach”, „krople delikatnie stukały w szybę”.
 - Długość: około ${slowa} słów (około ${ust.minuty} minut czytania).
 Zacznij od razu od tytułu.`;
 }
@@ -820,9 +839,9 @@ async function opowiadaj({ odpowiedzi = null, emoji = ['🐰', '🐻'], gotowa =
 
 function zapiszBajke(s) {
   historia.unshift({ id: Date.now(), tytul: s.tytul, tekst: s.surowy.slice(s.tekstOd).trim(), emoji: s.emoji, data: new Date().toISOString(), ulubiona: false });
-  // trzymamy 30 ostatnich + wszystkie ulubione
+  // trzymamy 200 ostatnich + wszystkie ulubione (resztę rodzic usuwa ręcznie w „Moje bajki”)
   let zwykle = 0;
-  historia = historia.filter(h => h.ulubiona || ++zwykle <= 30);
+  historia = historia.filter(h => h.ulubiona || ++zwykle <= 200);
   zapiszHist();
 }
 
@@ -1076,30 +1095,177 @@ if (NAT) {
 
 // ===== gotowe bajki (bajki.js — bez internetu i bez klucza) =====
 const GOTOWE = window.BAJKI || [];
-let wybranaKat = 'Wszystkie';
-function rysujBiblioteke() {
-  const kat = ['Wszystkie', ...new Set(GOTOWE.map(b => b.kat))];
+// Obrazki kategorii (SVG 200×140, nocna pastelowa paleta jak ikona i scena)
+const tloK = (id, a, b) => `<defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="${a}"/><stop offset="1" stop-color="${b}"/></linearGradient></defs><rect width="200" height="140" fill="url(#${id})"/>`;
+const gwK = () => '<g fill="#fff8d6"><circle cx="20" cy="18" r="1.6"/><circle cx="176" cy="22" r="1.4"/><circle cx="150" cy="12" r="1.2"/><circle cx="40" cy="40" r="1.2" opacity=".7"/><circle cx="118" cy="20" r="1" opacity=".7"/></g>';
+const iskraK = (x, y, s, k = '#fff8d6') => `<path fill="${k}" d="M${x} ${y - s} Q${x} ${y} ${x + s} ${y} Q${x} ${y} ${x} ${y + s} Q${x} ${y} ${x - s} ${y} Q${x} ${y} ${x} ${y - s} Z"/>`;
+const wzgK = k => `<path d="M0 118 Q60 98 110 112 T200 108 V140 H0 Z" fill="${k}"/>`;
+const okoK = (x, y, k = '#7a6a8c') => `<path d="M${x - 4} ${y} q4 4 8 0" stroke="${k}" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+const GRAFIKI_KAT = {
+  'Zwierzątka': id => `${tloK(id, '#3a3366', '#6d5f95')}${gwK()}${wzgK('#9fcdbd')}
+    <ellipse cx="104" cy="104" rx="34" ry="18" fill="#f3eefc"/><circle cx="134" cy="100" r="6" fill="#fff"/>
+    <ellipse cx="64" cy="70" rx="6" ry="19" fill="#f3eefc" transform="rotate(-28 64 70)"/><ellipse cx="64" cy="70" rx="2.6" ry="13" fill="#f3c3d8" transform="rotate(-28 64 70)"/>
+    <ellipse cx="80" cy="68" rx="6" ry="20" fill="#f3eefc" transform="rotate(-6 80 68)"/><ellipse cx="80" cy="68" rx="2.6" ry="14" fill="#f3c3d8" transform="rotate(-6 80 68)"/>
+    <circle cx="76" cy="96" r="18" fill="#f3eefc"/>${okoK(70, 95)}${okoK(84, 95)}<circle cx="77" cy="103" r="2.4" fill="#f3b6c8"/>
+    <text x="140" y="70" font-family="Nunito" font-weight="800" font-size="16" fill="#cdb9ea">z</text><text x="152" y="56" font-family="Nunito" font-weight="800" font-size="22" fill="#cdb9ea">Z</text>`,
+  'Przyroda': id => `${tloK(id, '#2e3a5c', '#5d8f8a')}${gwK()}${wzgK('#6f9e8e')}
+    <rect x="96" y="66" width="10" height="46" rx="3" fill="#a07a5f"/>
+    <circle cx="101" cy="58" r="26" fill="#f8cbb8"/><circle cx="80" cy="70" r="17" fill="#f6b89a"/><circle cx="122" cy="70" r="17" fill="#f8d9a8"/>
+    <ellipse cx="152" cy="86" rx="6" ry="3.5" fill="#f6b89a" transform="rotate(30 152 86)"/><ellipse cx="54" cy="98" rx="6" ry="3.5" fill="#f8d9a8" transform="rotate(-25 54 98)"/>
+    <ellipse cx="166" cy="104" rx="5" ry="3" fill="#f8cbb8" transform="rotate(10 166 104)"/>`,
+  'Niebo i kosmos': id => `${tloK(id, '#1f1d3a', '#4a4373')}${gwK()}
+    <path d="M124 26 A36 36 0 1 0 154 88 A30 30 0 1 1 124 26 Z" fill="#fbefc6"/>
+    <circle cx="58" cy="86" r="16" fill="#cdb9ea"/><ellipse cx="58" cy="86" rx="28" ry="7" fill="none" stroke="#f8cbb8" stroke-width="3" transform="rotate(-18 58 86)"/>
+    ${iskraK(170, 110, 7)}${iskraK(30, 30, 6, '#b6e3d2')}${iskraK(96, 120, 5, '#acd5f0')}`,
+  'Morze': id => `${tloK(id, '#2b3a66', '#4f88a8')}${gwK()}<circle cx="160" cy="28" r="12" fill="#fbefc6"/>
+    <path d="M100 92 q-6 -22 -24 -26 q14 10 24 10 q10 0 24 -10 q-18 4 -24 26 z" fill="#8fb5d9"/>
+    <path d="M0 94 Q25 84 50 94 T100 94 T150 94 T200 94 V140 H0 Z" fill="#7fc1d6"/>
+    <path d="M0 110 Q25 100 50 110 T100 110 T150 110 T200 110 V140 H0 Z" fill="#acd5f0"/>
+    <path d="M150 128 q8 -14 16 0 z" fill="#f8cbb8"/>`,
+  'Codzienność': id => `${tloK(id, '#3a3366', '#6d5f95')}
+    <circle cx="170" cy="62" r="24" fill="#f8e8ab" opacity=".15"/>
+    <rect x="168" y="68" width="4" height="44" fill="#e7def9"/><path d="M158 68 L182 68 L176 54 L164 54 Z" fill="#f8e8ab"/>
+    <rect x="34" y="58" width="12" height="56" rx="4" fill="#f8cbb8"/><rect x="34" y="94" width="122" height="18" rx="6" fill="#cdb9ea"/>
+    <rect x="78" y="82" width="78" height="22" rx="8" fill="#acd5f0"/><ellipse cx="62" cy="86" rx="16" ry="9" fill="#f7f2ff"/>
+    <circle cx="66" cy="78" r="10" fill="#f4dcc6"/>${okoK(63, 78, '#6b4f45')}<rect x="150" y="110" width="6" height="10" fill="#f8cbb8"/><rect x="36" y="110" width="6" height="10" fill="#f8cbb8"/>`,
+  'Czary i przygody': id => `${tloK(id, '#2b2847', '#5f5590')}${gwK()}
+    <path d="M48 120 L118 56" stroke="#f8cbb8" stroke-width="8" stroke-linecap="round"/>
+    <path d="M126 30 L132 46 L150 47 L136 58 L141 76 L126 66 L111 76 L116 58 L102 47 L120 46 Z" fill="#f8e8ab" stroke="#fff3c4" stroke-width="2" stroke-linejoin="round"/>
+    ${iskraK(64, 52, 8, '#b6e3d2')}${iskraK(166, 96, 7, '#acd5f0')}${iskraK(92, 104, 5)}`,
+  'Pojazdy': id => `${tloK(id, '#2f3560', '#6d6fa0')}${gwK()}<rect y="118" width="200" height="22" fill="#4a4373"/>
+    <path d="M10 129 H30 M50 129 H70 M90 129 H110 M130 129 H150 M170 129 H190" stroke="#f8e8ab" stroke-width="2"/>
+    <rect x="38" y="68" width="124" height="44" rx="12" fill="#b6e3d2"/>
+    <rect x="48" y="76" width="20" height="15" rx="3" fill="#e7f6ff"/><rect x="74" y="76" width="20" height="15" rx="3" fill="#e7f6ff"/>
+    <rect x="100" y="76" width="20" height="15" rx="3" fill="#e7f6ff"/><rect x="128" y="76" width="22" height="26" rx="3" fill="#e7f6ff"/>
+    <circle cx="160" cy="102" r="3" fill="#f8e8ab"/>
+    <circle cx="68" cy="114" r="10" fill="#2b2847"/><circle cx="68" cy="114" r="4" fill="#cdb9ea"/><circle cx="134" cy="114" r="10" fill="#2b2847"/><circle cx="134" cy="114" r="4" fill="#cdb9ea"/>`,
+  'Dinozaury': id => `${tloK(id, '#2e3a5c', '#6f8f7a')}${gwK()}
+    <path d="M6 118 L36 72 L48 72 L78 118 Z" fill="#6d5f95"/><circle cx="44" cy="62" r="6" fill="#cdb9ea" opacity=".5"/><circle cx="50" cy="50" r="8" fill="#cdb9ea" opacity=".35"/>
+    ${wzgK('#8fbf9f')}
+    <path d="M76 100 Q54 104 42 118" stroke="#9fd8b8" stroke-width="10" stroke-linecap="round" fill="none"/>
+    <ellipse cx="104" cy="98" rx="34" ry="18" fill="#9fd8b8"/>
+    <path d="M126 92 Q150 70 146 44" stroke="#9fd8b8" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <ellipse cx="152" cy="42" rx="13" ry="8" fill="#9fd8b8"/>${okoK(154, 40, '#4f6f5f')}
+    <rect x="86" y="108" width="8" height="14" rx="3" fill="#9fd8b8"/><rect x="114" y="108" width="8" height="14" rx="3" fill="#9fd8b8"/>
+    <circle cx="96" cy="92" r="3" fill="#7cc3a0"/><circle cx="110" cy="88" r="3.5" fill="#7cc3a0"/><circle cx="104" cy="100" r="2.5" fill="#7cc3a0"/>`,
+  'Na wsi': id => `${tloK(id, '#3a3366', '#8a7aa8')}${gwK()}<circle cx="164" cy="30" r="11" fill="#fbefc6"/>${wzgK('#9fcdbd')}
+    <rect x="68" y="66" width="64" height="48" fill="#f3a8a0"/><path d="M62 70 L100 42 L138 70 Z" fill="#e58f8a"/>
+    <rect x="89" y="88" width="22" height="26" fill="#fbe3d8"/><path d="M89 88 L111 114 M111 88 L89 114" stroke="#e58f8a" stroke-width="2.5"/>
+    <circle cx="100" cy="62" r="5" fill="#f8e8ab"/>
+    <path d="M10 104 H58 M142 104 H192 M16 96 V114 M34 96 V114 M52 96 V114 M148 96 V114 M166 96 V114 M184 96 V114" stroke="#f7f2ff" stroke-width="3" opacity=".8"/>`,
+  'Robaczki': id => `${tloK(id, '#2e3a5c', '#6aa39a')}${gwK()}
+    <ellipse cx="100" cy="104" rx="62" ry="18" fill="#8fc7a4"/>
+    <path d="M30 140 Q34 110 26 92 M44 140 Q46 116 54 100 M160 140 Q158 112 168 96 M176 140 Q178 118 186 106" stroke="#8fc7a4" stroke-width="4" fill="none" stroke-linecap="round"/>
+    <circle cx="100" cy="88" r="24" fill="#f28b8b"/><circle cx="100" cy="64" r="11" fill="#3b2f4a"/>
+    <path d="M100 66 V112" stroke="#3b2f4a" stroke-width="2.5"/>
+    <circle cx="88" cy="82" r="4.5" fill="#3b2f4a"/><circle cx="112" cy="82" r="4.5" fill="#3b2f4a"/><circle cx="86" cy="98" r="4" fill="#3b2f4a"/><circle cx="114" cy="98" r="4" fill="#3b2f4a"/>
+    <path d="M94 56 Q88 44 82 42 M106 56 Q112 44 118 42" stroke="#3b2f4a" stroke-width="2" fill="none" stroke-linecap="round"/>
+    <circle cx="96" cy="64" r="2.4" fill="#fff"/><circle cx="104" cy="64" r="2.4" fill="#fff"/>`,
+  'Dżungla i sawanna': id => `${tloK(id, '#4a3a6a', '#f2b28a')}<circle cx="150" cy="94" r="24" fill="#f8e8ab" opacity=".9"/>
+    <path d="M0 116 Q100 104 200 116 V140 H0 Z" fill="#c9a26a"/>
+    <path d="M30 116 L34 84" stroke="#5d5585" stroke-width="4"/><ellipse cx="34" cy="80" rx="26" ry="7" fill="#5d5585"/>
+    <path d="M92 116 L94 94 M110 116 L108 94" stroke="#f6d48a" stroke-width="6" stroke-linecap="round"/>
+    <ellipse cx="101" cy="90" rx="18" ry="11" fill="#f6d48a"/>
+    <path d="M112 86 L126 40" stroke="#f6d48a" stroke-width="10" stroke-linecap="round"/>
+    <ellipse cx="130" cy="38" rx="11" ry="7" fill="#f6d48a"/><path d="M126 30 V24 M132 30 V24" stroke="#c98a5a" stroke-width="2.5" stroke-linecap="round"/>
+    ${okoK(132, 36, '#8a5a3a')}
+    <circle cx="96" cy="88" r="3" fill="#c98a5a"/><circle cx="106" cy="92" r="2.6" fill="#c98a5a"/><circle cx="119" cy="66" r="2.6" fill="#c98a5a"/><circle cx="122" cy="54" r="2.2" fill="#c98a5a"/>`,
+  'Muzyka': id => `${tloK(id, '#2b2847', '#6d5f95')}${gwK()}
+    <path d="M10 70 Q100 50 190 70 M10 82 Q100 62 190 82 M10 94 Q100 74 190 94" stroke="#cdb9ea" stroke-width="1.5" fill="none" opacity=".5"/>
+    <ellipse cx="70" cy="100" rx="11" ry="8" fill="#f8e8ab" transform="rotate(-20 70 100)"/><ellipse cx="120" cy="92" rx="11" ry="8" fill="#f8e8ab" transform="rotate(-20 120 92)"/>
+    <path d="M79 97 V52 L129 44 V89" stroke="#f8e8ab" stroke-width="4" fill="none"/><path d="M79 54 L129 46 L129 56 L79 64 Z" fill="#f8e8ab"/>
+    <ellipse cx="160" cy="112" rx="8" ry="6" fill="#b6e3d2" transform="rotate(-20 160 112)"/><path d="M167 110 V80 Q176 86 180 94" stroke="#b6e3d2" stroke-width="3" fill="none"/>
+    ${iskraK(36, 46, 6, '#f8cbb8')}`,
+  'Zamki i królewny': id => `${tloK(id, '#3a3366', '#7d6fa8')}${gwK()}<circle cx="168" cy="28" r="10" fill="#fbefc6"/>${wzgK('#8b7fb8')}
+    <rect x="60" y="70" width="80" height="44" fill="#e7def9"/>
+    <rect x="46" y="50" width="24" height="64" fill="#e7def9"/><rect x="130" y="50" width="24" height="64" fill="#e7def9"/>
+    <path d="M42 52 L58 26 L74 52 Z M126 52 L142 26 L158 52 Z" fill="#f3c3d8"/>
+    <path d="M58 26 V14 L68 18 L58 22 M142 26 V14 L152 18 L142 22" stroke="#f8e8ab" stroke-width="2" fill="#f8e8ab"/>
+    <path d="M60 70 V64 H68 V70 M76 70 V64 H84 V70 M92 70 V64 H100 V70 M108 70 V64 H116 V70 M124 70 V64 H132 V70" fill="#e7def9"/>
+    <path d="M88 114 V96 Q100 82 112 96 V114 Z" fill="#6d5f95"/>
+    <rect x="54" y="64" width="8" height="10" rx="4" fill="#f8e8ab"/><rect x="138" y="64" width="8" height="10" rx="4" fill="#f8e8ab"/>`,
+  'Pyszności': id => `${tloK(id, '#3a3366', '#8a6f98')}${gwK()}
+    <ellipse cx="100" cy="114" rx="60" ry="11" fill="#f7f2ff"/>
+    <ellipse cx="100" cy="106" rx="46" ry="10" fill="#e8b878"/><ellipse cx="100" cy="103" rx="46" ry="10" fill="#f6d4a0"/>
+    <ellipse cx="100" cy="95" rx="46" ry="10" fill="#e8b878"/><ellipse cx="100" cy="92" rx="46" ry="10" fill="#f6d4a0"/>
+    <ellipse cx="100" cy="84" rx="46" ry="10" fill="#e8b878"/><ellipse cx="100" cy="81" rx="46" ry="10" fill="#f6d4a0"/>
+    <path d="M70 80 Q100 70 130 80 Q132 90 128 96 Q124 88 120 92 Q110 84 96 90 Q88 84 80 92 Q74 86 70 80 Z" fill="#c98a5a" opacity=".85"/>
+    <path d="M100 76 C88 66 92 54 100 60 C108 54 112 66 100 76 Z" fill="#f28b8b"/><path d="M96 58 L100 52 L104 58" stroke="#9fd8b8" stroke-width="3" fill="none" stroke-linecap="round"/>`,
+  'Wyciszanki': id => `${tloK(id, '#2b2847', '#6d5f95')}${gwK()}
+    <g fill="#e7def9"><circle cx="76" cy="96" r="24"/><circle cx="104" cy="84" r="30"/><circle cx="130" cy="100" r="20"/><rect x="56" y="96" width="94" height="24" rx="12"/></g>
+    ${okoK(92, 100)}${okoK(118, 100)}<circle cx="86" cy="108" r="4" fill="#f3b6c8" opacity=".8"/><circle cx="124" cy="108" r="4" fill="#f3b6c8" opacity=".8"/>
+    <path d="M40 74 V96 M164 60 V86 M150 44 V66" stroke="#f7f2ff" stroke-width="1" opacity=".6"/>
+    <ellipse cx="40" cy="66" rx="8" ry="10" fill="#f8cbb8"/><ellipse cx="164" cy="52" rx="8" ry="10" fill="#b6e3d2"/><ellipse cx="150" cy="36" rx="7" ry="9" fill="#acd5f0"/>`,
+  'Rodzina': id => `${tloK(id, '#3a3366', '#6d5f95')}${gwK()}${wzgK('#9fcdbd')}
+    <rect x="64" y="70" width="72" height="46" fill="#f8cbb8"/><path d="M56 74 L100 40 L144 74 Z" fill="#cdb9ea"/>
+    <rect x="118" y="44" width="10" height="18" fill="#cdb9ea"/>
+    <rect x="76" y="82" width="24" height="18" rx="3" fill="#f8e8ab"/><path d="M88 82 V100 M76 91 H100" stroke="#e8b878" stroke-width="2"/>
+    <rect x="108" y="88" width="16" height="28" rx="3" fill="#a07a9f"/>
+    <path d="M123 34 C116 27 118 20 123 24 C128 20 130 27 123 34 Z" fill="#f3b6c8"/><path d="M137 22 C132 17 134 12 137 15 C140 12 142 17 137 22 Z" fill="#f3b6c8" opacity=".7"/>`,
+  _: id => `${tloK(id, '#2b2847', '#6d5f95')}${gwK()}<path d="M110 30 A36 36 0 1 0 140 92 A30 30 0 1 1 110 30 Z" fill="#fbefc6"/>`,
+};
+let licznikGrafik = 0;
+function grafikaKat(kat) {
+  const f = GRAFIKI_KAT[kat] || GRAFIKI_KAT._;
+  return `<svg viewBox="0 0 200 140" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">${f('gk' + (++licznikGrafik))}</svg>`;
+}
+const odmianaBajek = n => n === 1 ? 'bajka' : (n % 10 >= 2 && n % 10 <= 4 && (n % 100 < 12 || n % 100 > 14)) ? 'bajki' : 'bajek';
+// Bajki wymyślone przez Claude (historia) są pierwszą „kategorią”; rodzic może je usuwać (za bramką).
+const MOJE = 'Moje bajki';
+GRAFIKI_KAT[MOJE] = id => `${tloK(id, '#3a3366', '#7d6fa8')}${gwK()}
+  <path d="M100 66 C82 56 58 56 40 62 V112 C58 106 82 106 100 116 Z" fill="#f7f2ff"/><path d="M100 66 C118 56 142 56 160 62 V112 C142 106 118 106 100 116 Z" fill="#e7def9"/>
+  <path d="M100 66 V116" stroke="#cdb9ea" stroke-width="3"/>
+  <path d="M52 74 C66 70 80 70 92 76 M52 86 C66 82 80 82 92 88 M148 74 C134 70 120 70 108 76 M148 86 C134 82 120 82 108 88" stroke="#cdb9ea" stroke-width="3" fill="none" stroke-linecap="round"/>
+  ${iskraK(100, 34, 12)}${iskraK(70, 40, 7, '#f8cbb8')}${iskraK(132, 44, 8, '#b6e3d2')}<path d="M158 20 A14 14 0 1 0 170 44 A11 11 0 1 1 158 20 Z" fill="#fbefc6"/>`;
+let wybranaKat = null;
+function rysujKategorie() {
   const k = $('#kategorie'); k.innerHTML = '';
-  for (const n of kat) {
-    const c = document.createElement('button'); c.className = 'chip' + (n === wybranaKat ? ' aktywny' : ''); c.textContent = n;
-    c.onclick = () => { wybranaKat = n; rysujBiblioteke(); };
+  const kategorie = [...new Set(GOTOWE.map(b => b.kat))];
+  if (historia.length) kategorie.unshift(MOJE);
+  for (const n of kategorie) {
+    const ile = n === MOJE ? historia.length : GOTOWE.filter(b => b.kat === n).length;
+    const c = document.createElement('button'); c.className = 'kafel-kat';
+    c.innerHTML = `${grafikaKat(n)}<b></b><small>${ile} ${odmianaBajek(ile)}</small>`;
+    c.querySelector('b').textContent = n;
+    c.onclick = () => otworzKategorie(n);
     k.appendChild(c);
   }
+}
+function otworzKategorie(n) {
+  wybranaKat = n;
+  const nag = $('#katNaglowek'); nag.innerHTML = `${grafikaKat(n)}<h2></h2>`; nag.querySelector('h2').textContent = n;
   const l = $('#listaGotowych'); l.innerHTML = '';
-  for (const b of GOTOWE.filter(b => wybranaKat === 'Wszystkie' || b.kat === wybranaKat)) {
+  const moje = n === MOJE;
+  for (const b of moje ? posortowane() : GOTOWE.filter(b => b.kat === n)) {
+    const emoji = (b.emoji && b.emoji.length) ? b.emoji : ['📖'];
+    const min = `ok. ${Math.max(1, Math.round(liczSlowa(b.tekst) / SLOW_NA_MINUTE))} min`;
     const w = document.createElement('div'); w.className = 'pozycja';
     w.innerHTML = '<span class="em"></span><span class="nazwa"><span class="t"></span><small></small></span>';
-    w.querySelector('.em').textContent = b.emoji[0];
+    w.querySelector('.em').textContent = emoji[0];
     w.querySelector('.t').textContent = b.tytul;
-    w.querySelector('small').textContent = `${b.kat} · ok. ${Math.max(1, Math.round(liczSlowa(b.tekst) / SLOW_NA_MINUTE))} min`;
+    w.querySelector('small').textContent = moje ? `${dataPl(b.data)} · ${min}` : min;
+    if (moje) {
+      const gw = document.createElement('button'); gw.textContent = b.ulubiona ? '⭐' : '☆'; gw.setAttribute('aria-label', 'Ulubiona');
+      gw.onclick = () => { b.ulubiona = !b.ulubiona; zapiszHist(); otworzKategorie(MOJE); };
+      const us = document.createElement('button'); us.textContent = '🗑'; us.setAttribute('aria-label', 'Usuń (dla rodzica)');
+      us.onclick = async () => {
+        if (!(await bramka())) return;
+        historia = historia.filter(x => x !== b); zapiszHist();
+        if (historia.length) otworzKategorie(MOJE); else doBiblioteki();
+      };
+      w.append(gw, us);
+    }
     const gr = document.createElement('button'); gr.textContent = '▶️'; gr.setAttribute('aria-label', 'Czytaj');
-    gr.onclick = () => { odblokuj(); opowiadaj({ gotowa: b, emoji: b.emoji }); };
+    gr.onclick = () => { odblokuj(); opowiadaj({ gotowa: b, emoji }); };
     w.appendChild(gr);
     l.appendChild(w);
   }
+  pokaz('ekranKategoria');
 }
-$('#doBiblioteki').onclick = () => { rysujBiblioteke(); pokaz('ekranBiblioteka'); };
+const doBiblioteki = () => { rysujKategorie(); pokaz('ekranBiblioteka'); };
+$('#doBiblioteki').onclick = doBiblioteki;
 $('#bibWroc').onclick = () => ekranTrybu();
+$('#katWroc').onclick = doBiblioteki;
 
 // ===== start i przyciski =====
 function odblokuj() { odblokujMowe(); Szum.odblokuj(); chceBlokady = true; nieGas(); }
@@ -1111,29 +1277,49 @@ function ekranTrybu() {
   if (!ust.klucz) uwagi.push('Tryb próbny (bez klucza API) — bajka jest gotowa i krótka.');
   if (!MOZE_SLUCHAC) uwagi.push('Ta przeglądarka nie rozpoznaje mowy — w trybie głosowym pytania są czytane, odpowiedź dotykiem.');
   $('#trybInfo').textContent = uwagi.join(' ');
-  $('#doUlubionych').hidden = !historia.length;
-  $('#doBiblioteki').hidden = !(window.BAJKI && window.BAJKI.length);
+  $('#doUlubionych').hidden = true;   // od 24.10 wymyślone bajki są w „Gotowe bajki” → „Moje bajki”
+  $('#doBiblioteki').hidden = !((window.BAJKI && window.BAJKI.length) || historia.length);
   pokaz('ekranTryb');
 }
 
 async function nowaBajka() {
+  const moja = ++sesjaPytan;   // „Wstecz” podbija licznik — przerwane pytania nie idą dalej
   const zw = await zapytaj({
     pytanie: 'O jakich zwierzątkach ma być bajka?',
     mowione: `${ust.imie ? `Cześć, ${ust.imie}! ` : ''}O jakich zwierzątkach ma być dzisiejsza bajka?`,
     propozycje: ZWIERZETA, wielokrotny: true,
   });
+  if (moja !== sesjaPytan || zw === null) return;
   const odp = [{ pytanie: 'O jakich zwierzątkach ma być bajka', odpowiedz: zw }];
   pokazMyslenie('Hmm… niech pomyślę');
   if (trybGlosowy) powiedz('Hmm, niech pomyślę.');
   let pytania = null;
   if (ust.klucz) { try { pytania = await pobierzPytania(zw); } catch (e) { console.warn(e); } }
+  if (moja !== sesjaPytan) return;
   if (!pytania || !pytania.length) pytania = PYTANIA_ZAPASOWE;
   for (const p of pytania) {
     const o = await zapytaj({ pytanie: p.pytanie, propozycje: [...p.propozycje.slice(0, 4), { tekst: 'wszystko jedno', emoji: '🎲' }] });
+    if (moja !== sesjaPytan || o === null) return;
     odp.push({ pytanie: p.pytanie, odpowiedz: o });
   }
   await opowiadaj({ odpowiedzi: odp, emoji: emojiZwierzat(zw) });
 }
+
+// Klawisz „Wstecz” w Androidzie (MainActivity.kt pyta tę funkcję): true = cofnięte w aplikacji,
+// false = jesteśmy na ekranie głównym i Android może schować aplikację.
+window.wysnijkaWstecz = () => {
+  if ($('#bramka').classList.contains('aktywny')) { $('#bramkaAnuluj').click(); return true; }
+  const id = (document.querySelector('.ekran.aktywny') || {}).id;
+  switch (id) {
+    case 'ekranPytanie':
+      sesjaPytan++; if (anulujPytanie) anulujPytanie(); zatrzymajSluchanie(); ucisz(); ekranTrybu(); return true;
+    case 'ekranBajka': $('#stop').click(); return true;
+    case 'ekranKategoria': doBiblioteki(); return true;
+    case 'ekranUstawienia': $('#ustWroc').click(); return true;
+    case 'ekranBiblioteka': case 'ekranUlubione': case 'ekranBlad': case 'ekranSen': ekranTrybu(); return true;
+    default: return false;   // ekran wyboru trybu / powitanie
+  }
+};
 
 function startTrybu(glos) { odblokuj(); trybGlosowy = glos; nowaBajka(); }
 $('#trybGlos').onclick = () => startTrybu(true);
@@ -1163,7 +1349,7 @@ $('#jeszczeRaz').onclick = () => ekranTrybu();
 $('#doUlubionych').onclick = () => { rysujListe($('#listaBajek'), false); pokaz('ekranUlubione'); };
 $('#ulubWroc').onclick = () => ekranTrybu();
 $('#bladPonow').onclick = () => { odblokuj(); opowiadaj({ odpowiedzi: ostatnieOdpowiedzi, emoji: emojiZwierzat(ostatnieOdpowiedzi && ostatnieOdpowiedzi[0].odpowiedz) }); };
-$('#bladZapisane').onclick = () => { rysujListe($('#listaBajek'), false); pokaz('ekranUlubione'); };
+$('#bladZapisane').onclick = () => otworzKategorie(MOJE);
 $('#bladWroc').onclick = () => ekranTrybu();
 
 // pierwsze uruchomienie
@@ -1189,7 +1375,26 @@ for (const [id, f] of Object.entries(pola)) $('#' + id).addEventListener('change
 $('#testGlosu').onclick = () => { odblokujMowe(); powiedz(`Dawno, dawno temu, za siedmioma górami, mieszkał sobie mały jeżyk.`); };
 document.querySelectorAll('[data-szum]').forEach(b => b.onclick = () => { Szum.odblokuj(); Szum.graj(1, b.dataset.szum); });
 $('#szumTestStop').onclick = () => Szum.zatrzymaj();
-$('#ustWroc').onclick = () => { Szum.zatrzymaj(); ekranTrybu(); };
+// Ustawienia otwarte w trakcie bajki: po „Gotowe” wracamy do bajki (zapauzowanej), lektor czyta dalej z nowymi ustawieniami.
+let ustZBajki = false;
+$('#bajkaUstawienia').onclick = async () => {
+  if (!stan) return;
+  if (!stan.pauza) $('#pauza').click();
+  if (!(await bramka())) return;
+  ustZBajki = true; wypelnijUstawienia(); pokaz('ekranUstawienia');
+};
+$('#ustWroc').onclick = () => {
+  if (ustZBajki && stan) {
+    ustZBajki = false;
+    Szum.zatrzymaj();   // gdyby rodzic testował dźwięki w ustawieniach
+    if (stan.nat) NAT.bajkaUstaw({ glos: ust.glos, tempo: ust.tempo, ton: ust.ton }).catch(() => {});
+    pokaz('ekranBajka');
+    $('#zdanie').textContent = 'Naciśnij ▶️, żeby czytać dalej.';
+    return;
+  }
+  ustZBajki = false;
+  Szum.zatrzymaj(); ekranTrybu();
+};
 $('#ustWyczysc').onclick = () => {
   try { Object.keys(localStorage).filter(k => k.startsWith(PREFIKS)).forEach(k => localStorage.removeItem(k)); } catch {}
   location.reload();
