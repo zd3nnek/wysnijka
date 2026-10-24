@@ -1,0 +1,14 @@
+{
+  "name": "Wyśnijka — bajki na dobranoc",
+  "short_name": "Wyśnijka",
+  "lang": "pl",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#2b2847",
+  "theme_color": "#2b2847",
+  "icons": [
+    { "src": "ikona.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+  ]
+}

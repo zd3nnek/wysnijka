@@ -1,0 +1,1063 @@
+<!doctype html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#2b2847">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Wyśnijka">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="ikona.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Nunito:wght@500;700;800&display=swap" rel="stylesheet">
+<title>Wyśnijka</title>
+<style>
+:root {
+  --niebo1: #2b2847;
+  --niebo2: #4a4373;
+  --niebo3: #6d5f95;
+  --lawenda: #cdb9ea;
+  --mieta: #b6e3d2;
+  --brzoskwinia: #f8cbb8;
+  --maslo: #f8e8ab;
+  --blekit: #acd5f0;
+  --roz: #f3c3d8;
+  --tekst: #f7f2ff;
+  --tekst2: #cbc2e4;
+  --karta: rgba(255,255,255,.09);
+  --karta-ramka: rgba(255,255,255,.16);
+  --cien: 0 10px 30px rgba(10,6,30,.35);
+}
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+html, body { margin: 0; height: 100%; }
+body {
+  font-family: Nunito, "Segoe UI", system-ui, sans-serif;
+  color: var(--tekst);
+  background: linear-gradient(180deg, var(--niebo1) 0%, var(--niebo2) 60%, var(--niebo3) 100%) fixed;
+  background-color: var(--niebo1);
+  overflow-x: hidden;
+  user-select: none; -webkit-user-select: none;
+}
+button, input, select { font: inherit; color: inherit; }
+button { cursor: pointer; border: 0; background: none; }
+.ekran {
+  display: none; min-height: 100vh; min-height: 100dvh;
+  padding: max(16px, env(safe-area-inset-top)) 16px max(20px, env(safe-area-inset-bottom));
+  flex-direction: column; align-items: center; gap: 18px;
+  max-width: 640px; margin: 0 auto; position: relative;
+}
+.ekran.aktywny { display: flex; animation: wejscie .5s ease; }
+@keyframes wejscie { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+h1 { font-weight: 800; font-size: 2.1rem; margin: 6px 0 0; letter-spacing: .5px; color: var(--maslo); text-align: center; }
+h2 { font-weight: 800; font-size: 1.6rem; margin: 0; text-align: center; line-height: 1.25; }
+p { margin: 0; line-height: 1.5; }
+.podtytul { color: var(--tekst2); text-align: center; font-size: 1.05rem; }
+.mala { font-size: .88rem; color: var(--tekst2); }
+
+/* przyciski */
+.przycisk {
+  background: var(--lawenda); color: #2b2847; font-weight: 800; font-size: 1.15rem;
+  padding: 14px 26px; border-radius: 999px; box-shadow: var(--cien);
+  transition: transform .15s;
+}
+.przycisk:active { transform: scale(.96); }
+.przycisk.mieta { background: var(--mieta); }
+.przycisk.brzoskwinia { background: var(--brzoskwinia); }
+.przycisk.cichy { background: var(--karta); color: var(--tekst); box-shadow: none; border: 1px solid var(--karta-ramka); font-weight: 700; font-size: 1rem; padding: 10px 18px; }
+.rzad { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+
+/* ekran trybu */
+.tryby { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; width: 100%; margin-top: 6px; }
+.tryb {
+  border-radius: 28px; padding: 26px 12px 22px; display: flex; flex-direction: column; align-items: center; gap: 10px;
+  box-shadow: var(--cien); color: #2b2847; transition: transform .15s; min-height: 210px; justify-content: center;
+}
+.tryb:active { transform: scale(.97); }
+.tryb .duza { font-size: 4.2rem; line-height: 1; }
+.tryb b { font-size: 1.35rem; font-weight: 800; }
+.tryb span.opis { font-size: .95rem; opacity: .8; text-align: center; }
+.tryb.glos { background: linear-gradient(160deg, var(--brzoskwinia), var(--roz)); }
+.tryb.cicho { background: linear-gradient(160deg, var(--blekit), var(--lawenda)); }
+.rog { position: absolute; top: max(14px, env(safe-area-inset-top)); right: 14px; font-size: 1.5rem; opacity: .55; padding: 6px; }
+
+/* pytania */
+.kafelki { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; width: 100%; }
+.kafelek {
+  background: var(--karta); border: 2px solid var(--karta-ramka); border-radius: 22px;
+  padding: 12px 4px 10px; display: flex; flex-direction: column; align-items: center; gap: 4px;
+  min-height: 104px; justify-content: center; transition: transform .15s, background .2s, border-color .2s;
+}
+.kafelek:active { transform: scale(.95); }
+.kafelek .emoji { font-size: 2.7rem; line-height: 1.1; }
+.kafelek .podpis { font-weight: 700; font-size: .98rem; text-align: center; line-height: 1.15; }
+.kafelek.wybrany { background: rgba(248,232,171,.25); border-color: var(--maslo); }
+.pole { display: flex; gap: 8px; width: 100%; }
+.pole input {
+  flex: 1; min-width: 0; background: var(--karta); border: 2px solid var(--karta-ramka); border-radius: 18px;
+  padding: 12px 14px; font-size: 1.1rem; outline: none; user-select: text; -webkit-user-select: text;
+}
+.pole input:focus { border-color: var(--lawenda); }
+.mikrofon {
+  width: 96px; height: 96px; border-radius: 50%; font-size: 2.8rem;
+  background: linear-gradient(160deg, var(--brzoskwinia), var(--roz)); box-shadow: var(--cien);
+}
+.mikrofon.slucha { animation: puls 1.2s ease-in-out infinite; }
+@keyframes puls { 0%,100% { box-shadow: 0 0 0 0 rgba(248,203,184,.6); } 50% { box-shadow: 0 0 0 18px rgba(248,203,184,0); } }
+.uslyszane { min-height: 1.6em; font-size: 1.2rem; color: var(--maslo); text-align: center; }
+.potw {
+  width: 100%; background: var(--karta); border: 1px solid var(--karta-ramka); border-radius: 24px; padding: 16px;
+  display: flex; flex-direction: column; align-items: center; gap: 12px;
+}
+.potw .rzad .przycisk { min-width: 120px; font-size: 1.3rem; }
+.myslenie { display: flex; flex-direction: column; align-items: center; gap: 14px; margin-top: 30px; }
+.chmurka-mysli { font-size: 4rem; animation: unoszenie 2.4s ease-in-out infinite; }
+@keyframes unoszenie { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-10px); } }
+.info { color: var(--brzoskwinia); text-align: center; min-height: 1.2em; }
+
+/* scena */
+.scena { width: 100%; max-width: 520px; aspect-ratio: 4 / 3; -webkit-mask-image: linear-gradient(to bottom, #000 78%, transparent); mask-image: linear-gradient(to bottom, #000 78%, transparent); }
+#ekranTryb { padding-top: max(56px, calc(env(safe-area-inset-top) + 44px)); }
+.scena svg { width: 100%; height: 100%; overflow: visible; }
+.gwiazda { animation: migotanie 3s ease-in-out infinite; }
+@keyframes migotanie { 0%,100% { opacity: .25; } 50% { opacity: 1; } }
+.chmury { animation: dryf 40s linear infinite alternate; }
+@keyframes dryf { from { transform: translateX(-20px); } to { transform: translateX(30px); } }
+.zwierzak { animation: kolysanie 4s ease-in-out infinite; transform-box: fill-box; transform-origin: 50% 100%; }
+@keyframes kolysanie { 0%,100% { transform: rotate(-3deg); } 50% { transform: rotate(3deg); } }
+.zzz { animation: zzz 4s ease-in-out infinite; opacity: 0; }
+@keyframes zzz { 0% { opacity: 0; transform: translate(0,0); } 30% { opacity: .9; } 100% { opacity: 0; transform: translate(18px,-34px); } }
+.tytul-bajki { color: var(--maslo); }
+.zdanie { color: var(--tekst2); text-align: center; font-size: 1.05rem; min-height: 4.6em; max-width: 520px; }
+.sterowanie { display: flex; gap: 14px; }
+.kolko { width: 64px; height: 64px; border-radius: 50%; background: var(--karta); border: 1px solid var(--karta-ramka); font-size: 1.6rem; }
+
+/* zasłona nocna: przy ciemnym ekranie pierwszy dotyk tylko budzi */
+#zaslona { position: fixed; inset: 0; background: #05040c; opacity: 0; pointer-events: none; transition: opacity 3s ease; z-index: 50; }
+body.ciemno #zaslona { opacity: .94; pointer-events: auto; }
+
+/* listy i formularze */
+.karta { width: 100%; background: var(--karta); border: 1px solid var(--karta-ramka); border-radius: 22px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.karta h3 { margin: 0; font-size: 1.1rem; color: var(--maslo); }
+label.wiersz { display: flex; flex-direction: column; gap: 6px; font-weight: 700; }
+label.wiersz input, label.wiersz select {
+  background: rgba(0,0,0,.18); border: 1px solid var(--karta-ramka); border-radius: 14px; padding: 11px 12px; font-size: 1rem; outline: none;
+  user-select: text; -webkit-user-select: text; width: 100%;
+}
+label.wiersz select option { color: #222; }
+input[type=range] { padding: 0 !important; accent-color: var(--lawenda); background: none !important; border: 0 !important; }
+.pozycja { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--karta-ramka); }
+.pozycja:last-child { border-bottom: 0; }
+.pozycja .em { font-size: 1.6rem; }
+.pozycja .nazwa { flex: 1; min-width: 0; font-weight: 700; line-height: 1.2; }
+.pozycja .nazwa small { display: block; font-weight: 500; color: var(--tekst2); }
+.pozycja button { font-size: 1.3rem; padding: 6px; }
+.modal { position: fixed; inset: 0; background: rgba(10,6,30,.7); display: none; align-items: center; justify-content: center; z-index: 60; padding: 16px; }
+.modal.aktywny { display: flex; }
+.modal .karta { max-width: 360px; background: var(--niebo2); }
+a { color: var(--blekit); }
+[hidden] { display: none !important; }
+@media (max-width: 380px) { .kafelek .emoji { font-size: 2.2rem; } .tryb { min-height: 180px; } .tryb .duza { font-size: 3.4rem; } }
+</style>
+</head>
+<body>
+
+<!-- pierwsze uruchomienie -->
+<section class="ekran" id="ekranPowitanie">
+  <h1>Wyśnijka 🌙</h1>
+  <p class="podtytul">Bajki na dobranoc wymyślane na żywo.</p>
+  <div class="karta">
+    <label class="wiersz">Jak ma na imię dziecko?
+      <input id="powImie" autocomplete="off" placeholder="np. Zosia">
+    </label>
+    <label class="wiersz">Ile ma lat?
+      <select id="powWiek"></select>
+    </label>
+    <label class="wiersz">Klucz Claude API
+      <input id="powKlucz" type="password" autocomplete="off" placeholder="sk-ant-…">
+    </label>
+    <p class="mala">Klucz zostaje tylko na tym telefonie. Bez klucza aplikacja działa w trybie próbnym (gotowa krótka bajka).
+      Klucz: <a href="https://console.anthropic.com/settings/keys" target="_blank" rel="noopener">console.anthropic.com</a></p>
+  </div>
+  <button class="przycisk" id="powStart">Zaczynamy ✨</button>
+</section>
+
+<!-- wybór trybu -->
+<section class="ekran" id="ekranTryb">
+  <button class="rog" id="doUstawien" aria-label="Ustawienia dla rodzica">⚙️</button>
+  <h1 id="powitanie">Dobry wieczór!</h1>
+  <p class="podtytul">Jak dziś wymyślamy bajkę?</p>
+  <div class="tryby">
+    <button class="tryb glos" id="trybGlos"><span class="duza">🎤</span><b>Głosem</b><span class="opis">rozmawiamy na głos</span></button>
+    <button class="tryb cicho" id="trybCicho"><span class="duza">🤫</span><b>Po cichu</b><span class="opis">dotykam obrazków</span></button>
+  </div>
+  <p class="mala" id="trybInfo"></p>
+  <button class="przycisk cichy" id="doUlubionych">⭐ Zapisane bajki</button>
+</section>
+
+<!-- pytania -->
+<section class="ekran" id="ekranPytanie">
+  <h2 id="pytTekst"></h2>
+  <div class="myslenie" id="myslenie" hidden><div class="chmurka-mysli">💭</div><p class="podtytul" id="myslenieTekst"></p></div>
+  <div class="uslyszane" id="uslyszane"></div>
+  <div class="potw" id="potw" hidden>
+    <p class="podtytul">Dobrze słyszę?</p>
+    <h2 id="potwTekst"></h2>
+    <div class="rzad"><button class="przycisk mieta" id="potwTak">👍 Tak</button><button class="przycisk brzoskwinia" id="potwNie">👎 Nie</button></div>
+  </div>
+  <button class="mikrofon" id="mikrofon" aria-label="Powiedz">🎤</button>
+  <div class="kafelki" id="kafelki"></div>
+  <button class="przycisk" id="gotowe" hidden>Gotowe ✓</button>
+  <form class="pole" id="formTekst" autocomplete="off">
+    <input id="poleTekst" placeholder="albo napisz…" enterkeyhint="send">
+    <button class="przycisk" type="submit">➜</button>
+  </form>
+  <p class="info" id="info"></p>
+</section>
+
+<!-- bajka -->
+<section class="ekran" id="ekranBajka">
+  <div class="scena" id="scenaBajki"></div>
+  <h2 class="tytul-bajki" id="tytul"></h2>
+  <p class="zdanie" id="zdanie"></p>
+  <div class="sterowanie">
+    <button class="kolko" id="pauza" aria-label="Pauza">⏸</button>
+    <button class="kolko" id="stop" aria-label="Zakończ">⏹</button>
+  </div>
+</section>
+
+<!-- zasypianie -->
+<section class="ekran" id="ekranSen">
+  <div class="scena" id="scenaSnu"></div>
+  <h2 class="tytul-bajki">Śpij dobrze 🌙</h2>
+  <p class="podtytul" id="senOpis"></p>
+  <div class="rzad">
+    <button class="przycisk cichy" id="szumWl">🔇 Cisza</button>
+    <button class="przycisk cichy" id="jeszczeRaz">✨ Nowa bajka</button>
+  </div>
+</section>
+
+<!-- zapisane bajki -->
+<section class="ekran" id="ekranUlubione">
+  <h2>Zapisane bajki</h2>
+  <div class="karta" id="listaBajek"></div>
+  <button class="przycisk cichy" id="ulubWroc">← Wróć</button>
+</section>
+
+<!-- błąd -->
+<section class="ekran" id="ekranBlad">
+  <div class="chmurka-mysli">🌧️</div>
+  <h2>Nie udało się wymyślić bajki</h2>
+  <p class="podtytul" id="bladTekst"></p>
+  <div class="rzad">
+    <button class="przycisk" id="bladPonow">Spróbuj jeszcze raz</button>
+    <button class="przycisk cichy" id="bladZapisane">⭐ Zapisana bajka</button>
+    <button class="przycisk cichy" id="bladWroc">← Wróć</button>
+  </div>
+</section>
+
+<!-- ustawienia rodzica -->
+<section class="ekran" id="ekranUstawienia">
+  <h2>Ustawienia</h2>
+  <div class="karta">
+    <h3>Dziecko</h3>
+    <label class="wiersz">Imię <input id="ustImie" autocomplete="off"></label>
+    <label class="wiersz">Wiek <select id="ustWiek"></select></label>
+  </div>
+  <div class="karta">
+    <h3>Bajka</h3>
+    <label class="wiersz">Długość <select id="ustMinuty"><option value="5">ok. 5 minut</option><option value="10">ok. 10 minut</option><option value="15">ok. 15 minut</option></select></label>
+    <label class="wiersz">Model AI <select id="ustModel">
+      <option value="claude-opus-5-5">Claude Opus 5.5 (najlepsze bajki)</option>
+      <option value="claude-sonnet-5-5">Claude Sonnet 5.5 (o połowę taniej)</option>
+    </select></label>
+    <label class="wiersz">Klucz Claude API <input id="ustKlucz" type="password" autocomplete="off" placeholder="brak = tryb próbny"></label>
+  </div>
+  <div class="karta">
+    <h3>Lektor</h3>
+    <label class="wiersz">Głos <select id="ustGlos"></select></label>
+    <label class="wiersz">Tempo czytania <input id="ustTempo" type="range" min="0.6" max="1.1" step="0.05"></label>
+    <button class="przycisk cichy" id="testGlosu">🔊 Posłuchaj lektora</button>
+  </div>
+  <div class="karta">
+    <h3>Dźwięki do snu (10 minut, losowo)</h3>
+    <label class="wiersz">Głośność <input id="ustSzum" type="range" min="0.05" max="0.8" step="0.05"></label>
+    <div class="rzad">
+      <button class="przycisk cichy" data-szum="morze">🌊 Morze</button>
+      <button class="przycisk cichy" data-szum="deszcz">🌧️ Deszcz</button>
+      <button class="przycisk cichy" data-szum="las">🌲 Las</button>
+      <button class="przycisk cichy" id="szumTestStop">🔇</button>
+    </div>
+  </div>
+  <div class="karta">
+    <h3>Zapisane bajki</h3>
+    <div id="listaUst"></div>
+  </div>
+  <button class="przycisk" id="ustWroc">Gotowe</button>
+  <button class="przycisk cichy" id="ustWyczysc">Usuń wszystkie dane z tego telefonu</button>
+</section>
+
+<!-- bramka dla rodzica -->
+<div class="modal" id="bramka">
+  <div class="karta">
+    <h3>Dla rodzica</h3>
+    <p id="bramkaPytanie"></p>
+    <label class="wiersz"><input id="bramkaOdp" inputmode="numeric" autocomplete="off"></label>
+    <div class="rzad"><button class="przycisk" id="bramkaOk">OK</button><button class="przycisk cichy" id="bramkaAnuluj">Anuluj</button></div>
+  </div>
+</div>
+
+<div id="zaslona"></div>
+
+<script type="module">
+// ===== stałe =====
+const SDK_URL = 'https://esm.sh/@anthropic-ai/sdk@1.3.0';
+const BETY = ['server-side-fallback-2026-07-01'];
+const SLOW_NA_MINUTE = 105;          // tempo lektora ~0.85 → ok. 100–110 słów na minutę
+const MINUTY_SZUMU = 10;
+
+const ZWIERZETA = [
+  { tekst: 'zajączek', emoji: '🐰', rdzen: /zaj[aą]c|kr[oó]li/ },
+  { tekst: 'miś', emoji: '🐻', rdzen: /mi[sś]|misi|nied[zź]wi/ },
+  { tekst: 'lisek', emoji: '🦊', rdzen: /lis/ },
+  { tekst: 'kotek', emoji: '🐱', rdzen: /kot|kici/ },
+  { tekst: 'piesek', emoji: '🐶', rdzen: /pies|psa|psem|piesk|piesi/ },
+  { tekst: 'jeżyk', emoji: '🦔', rdzen: /je[żz]/ },
+  { tekst: 'sówka', emoji: '🦉', rdzen: /s[oó]w|sowa/ },
+  { tekst: 'żabka', emoji: '🐸', rdzen: /[żz]ab/ },
+  { tekst: 'myszka', emoji: '🐭', rdzen: /mysz/ },
+  { tekst: 'jednorożec', emoji: '🦄', rdzen: /jednoro/ },
+  { tekst: 'świnka', emoji: '🐷', rdzen: /[śs]win/ },
+  { tekst: 'pingwinek', emoji: '🐧', rdzen: /pingwin/ },
+  { tekst: 'wiewiórka', emoji: '🐿️', rdzen: /wiewi[oó]r/ },
+  { tekst: 'słonik', emoji: '🐘', rdzen: /s[łl]o[nń]/ },
+  { tekst: 'kaczuszka', emoji: '🐥', rdzen: /kacz|kurcz/ },
+];
+
+// pytania zapasowe: tryb próbny albo gdy AI nie odpowie
+const PYTANIA_ZAPASOWE = [
+  { pytanie: 'Gdzie dzieje się bajka?', propozycje: [
+    { tekst: 'w lesie', emoji: '🌲' }, { tekst: 'nad morzem', emoji: '🌊' }, { tekst: 'na łące', emoji: '🌼' }, { tekst: 'w chmurkach', emoji: '☁️' } ] },
+  { pytanie: 'Co będą robić zwierzątka?', propozycje: [
+    { tekst: 'szukać skarbu', emoji: '💎' }, { tekst: 'piknik', emoji: '🧺' }, { tekst: 'budować domek', emoji: '🏡' }, { tekst: 'pomagać przyjacielowi', emoji: '🤝' } ] },
+  { pytanie: 'Jaki kolor lubisz najbardziej?', propozycje: [
+    { tekst: 'różowy', emoji: '🩷' }, { tekst: 'niebieski', emoji: '💙' }, { tekst: 'żółty', emoji: '💛' }, { tekst: 'zielony', emoji: '💚' } ] },
+];
+
+const SCHEMAT_PYTAN = {
+  type: 'object', additionalProperties: false, required: ['pytania'],
+  properties: { pytania: { type: 'array', items: {
+    type: 'object', additionalProperties: false, required: ['pytanie', 'propozycje'],
+    properties: {
+      pytanie: { type: 'string' },
+      propozycje: { type: 'array', items: {
+        type: 'object', additionalProperties: false, required: ['tekst', 'emoji'],
+        properties: { tekst: { type: 'string' }, emoji: { type: 'string' } } } },
+    } } } },
+};
+
+// ===== pamięć telefonu =====
+const PREFIKS = 'wysnijka.';
+function wczytaj(k, dom) { try { const v = localStorage.getItem(PREFIKS + k); return v === null ? dom : JSON.parse(v); } catch { return dom; } }
+function zapisz(k, v) { try { localStorage.setItem(PREFIKS + k, JSON.stringify(v)); } catch {} }
+
+const ust = Object.assign({
+  imie: '', wiek: 3, klucz: '', model: 'claude-opus-5-5', minuty: 15, tempo: 0.85, glos: '', szum: 0.3, gotowe: false,
+}, wczytaj('ustawienia', {}));
+const zapiszUst = () => zapisz('ustawienia', ust);
+let historia = wczytaj('historia', []);
+const zapiszHist = () => zapisz('historia', historia);
+
+// ===== pomocnicze =====
+const $ = s => document.querySelector(s);
+const czekaj = ms => new Promise(r => setTimeout(r, ms));
+const czysc = t => t.replace(/[*#_`>~]/g, '').replace(/\s+/g, ' ').trim();
+const liczSlowa = t => (t.match(/\S+/g) || []).length;
+let trybGlosowy = false;
+
+function pokaz(id) {
+  document.querySelectorAll('.ekran').forEach(e => e.classList.toggle('aktywny', e.id === id));
+  const nocny = id === 'ekranBajka' || id === 'ekranSen';
+  document.body.classList.toggle('nocny', nocny);
+  if (nocny) przyciemnij(14000); else { clearTimeout(czuwanieT); document.body.classList.remove('ciemno'); }
+  window.scrollTo(0, 0);
+}
+
+// ===== ekran nie gaśnie, tylko ciemnieje =====
+let blokada = null, chceBlokady = false, czuwanieT = null;
+async function nieGas() {
+  try { if ('wakeLock' in navigator && !blokada) { blokada = await navigator.wakeLock.request('screen'); blokada.addEventListener('release', () => { blokada = null; }); } } catch {}
+}
+document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible' && chceBlokady) nieGas(); });
+function przyciemnij(po) {
+  clearTimeout(czuwanieT); document.body.classList.remove('ciemno');
+  czuwanieT = setTimeout(() => { if (document.body.classList.contains('nocny')) document.body.classList.add('ciemno'); }, po);
+}
+$('#zaslona').addEventListener('click', () => przyciemnij(8000));
+
+// ===== lektor (synteza mowy) =====
+let glosy = [];
+function zaladujGlosy() {
+  if (!('speechSynthesis' in window)) return;
+  glosy = speechSynthesis.getVoices().filter(v => (v.lang || '').toLowerCase().replace('_', '-').startsWith('pl'));
+  const sel = $('#ustGlos'); sel.innerHTML = '';
+  if (!glosy.length) sel.innerHTML = '<option value="">(domyślny głos telefonu)</option>';
+  for (const v of glosy) { const o = document.createElement('option'); o.value = v.voiceURI; o.textContent = v.name; sel.appendChild(o); }
+  const w = wybranyGlos(); if (w) sel.value = w.voiceURI;
+}
+if ('speechSynthesis' in window) { speechSynthesis.onvoiceschanged = zaladujGlosy; zaladujGlosy(); }
+function wybranyGlos() {
+  return glosy.find(v => v.voiceURI === ust.glos) || glosy.find(v => /zosia|ewa|paulina|female|kobiet/i.test(v.name)) || glosy[0] || null;
+}
+function powiedz(tekst, { glosnosc = 1, tempo = ust.tempo } = {}) {
+  return new Promise(res => {
+    if (!('speechSynthesis' in window) || !tekst) return res();
+    const u = new SpeechSynthesisUtterance(tekst);
+    u.lang = 'pl-PL'; const g = wybranyGlos(); if (g) u.voice = g;
+    u.rate = tempo; u.pitch = 1.05; u.volume = glosnosc;
+    let koniec = false;
+    const fin = () => { if (!koniec) { koniec = true; clearTimeout(straz); res(); } };
+    u.onend = fin; u.onerror = fin;
+    // niektóre przeglądarki gubią onend — straż kończy zdanie po czasie
+    const straz = setTimeout(fin, 5000 + tekst.length * 130 / tempo);
+    speechSynthesis.speak(u);
+  });
+}
+function odblokujMowe() {
+  try { if ('speechSynthesis' in window) { speechSynthesis.cancel(); const u = new SpeechSynthesisUtterance(' '); u.volume = 0; speechSynthesis.speak(u); } } catch {}
+}
+
+// ===== słuchanie (rozpoznawanie mowy) =====
+const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+let stopSluchania = null, anulujPotw = null;
+const zatrzymajSluchanie = () => { if (stopSluchania) stopSluchania(); };
+function sluchaj(ms = 9000) {
+  return new Promise(res => {
+    if (!SR) return res(null);
+    let r; try { r = new SR(); } catch { return res(null); }
+    r.lang = 'pl-PL'; r.interimResults = true; r.continuous = false; r.maxAlternatives = 1;
+    let wynik = '', gotowe = false, t;
+    const fin = v => {
+      if (gotowe) return; gotowe = true; clearTimeout(t); stopSluchania = null;
+      try { r.abort(); } catch {}
+      $('#mikrofon').classList.remove('slucha'); res(v);
+    };
+    r.onresult = e => {
+      wynik = Array.from(e.results).map(x => x[0].transcript).join(' ').trim();
+      $('#uslyszane').textContent = wynik ? `„${wynik}”` : '';
+      if (e.results[e.results.length - 1].isFinal) fin(wynik || null);
+    };
+    r.onerror = e => fin(/not-allowed|service-not-allowed/.test(e.error) ? { blad: 'zgoda' } : (wynik || null));
+    r.onend = () => fin(wynik || null);
+    stopSluchania = () => fin(null);
+    t = setTimeout(() => fin(wynik || null), ms);
+    try { r.start(); $('#mikrofon').classList.add('slucha'); } catch { fin(null); }
+  });
+}
+
+function potwierdz(u) {
+  return new Promise(res => {
+    let done = false;
+    $('#potwTekst').textContent = `„${u}”`; $('#potw').hidden = false;
+    const f = v => { if (done) return; done = true; $('#potw').hidden = true; anulujPotw = null; zatrzymajSluchanie(); res(v); };
+    anulujPotw = () => f(null);
+    $('#potwTak').onclick = () => f(true);
+    $('#potwNie').onclick = () => f(false);
+    (async () => {
+      for (let i = 0; i < 2 && !done; i++) {
+        const o = await sluchaj(6000);
+        if (done) return;
+        if (typeof o !== 'string') continue;
+        if (/\bnie\b/i.test(o)) return f(false);
+        if (/\b(tak|tag|dobrze|jasne|pewnie|no|ok|okej|aha|mhm|yhm)\b/i.test(o)) return f(true);
+      }
+    })();
+  });
+}
+
+// ===== jedno pytanie: obrazki, pisanie albo głos =====
+function zapytaj({ pytanie, mowione, propozycje = [], wielokrotny = false }) {
+  return new Promise(resolve => {
+    pokaz('ekranPytanie');
+    $('#pytTekst').textContent = pytanie;
+    $('#uslyszane').textContent = ''; $('#info').textContent = ''; $('#poleTekst').value = '';
+    $('#myslenie').hidden = true; $('#potw').hidden = true;
+    $('#formTekst').hidden = trybGlosowy;
+    $('#mikrofon').hidden = !trybGlosowy || !SR;
+    const kaf = $('#kafelki'); kaf.innerHTML = ''; kaf.hidden = false;
+    const wybrane = new Set();
+    let zalatwione = false;
+    const zakoncz = tekst => {
+      if (zalatwione) return; zalatwione = true;
+      zatrzymajSluchanie(); if (anulujPotw) anulujPotw();
+      if ('speechSynthesis' in window) speechSynthesis.cancel();
+      $('#gotowe').hidden = true; resolve(tekst);
+    };
+    for (const p of propozycje) {
+      const b = document.createElement('button'); b.type = 'button'; b.className = 'kafelek';
+      b.innerHTML = '<span class="emoji"></span><span class="podpis"></span>';
+      b.querySelector('.emoji').textContent = p.emoji || '✨';
+      b.querySelector('.podpis').textContent = p.tekst;
+      b.onclick = () => {
+        if (!wielokrotny) { b.classList.add('wybrany'); setTimeout(() => zakoncz(p.tekst), 250); return; }
+        if (wybrane.has(p.tekst)) { wybrane.delete(p.tekst); b.classList.remove('wybrany'); }
+        else { wybrane.add(p.tekst); b.classList.add('wybrany'); }
+        $('#gotowe').hidden = wybrane.size === 0;
+      };
+      kaf.appendChild(b);
+    }
+    $('#gotowe').hidden = true;
+    $('#gotowe').onclick = () => zakoncz([...wybrane].join(', '));
+    $('#formTekst').onsubmit = e => { e.preventDefault(); const v = $('#poleTekst').value.trim(); if (v) zakoncz(v); };
+    $('#mikrofon').onclick = () => rozmowa(true);
+
+    let wRozmowie = false;
+    async function rozmowa(odRazu = false) {
+      if (wRozmowie || zalatwione) return; wRozmowie = true;
+      try {
+        for (let proba = 0; proba < 3 && !zalatwione; proba++) {
+          if (!(odRazu && proba === 0)) await powiedz(proba === 0 ? (mowione || pytanie) : 'Powiedz jeszcze raz, proszę.');
+          if (zalatwione) return;
+          const u = await sluchaj();
+          if (zalatwione) return;
+          if (u && u.blad) { $('#info').textContent = 'Brak zgody na mikrofon — dotknij obrazka albo zezwól na mikrofon w przeglądarce.'; return; }
+          if (!u) continue;
+          await powiedz(`Czy dobrze słyszę: ${u}?`);
+          if (zalatwione) return;
+          const ok = await potwierdz(u);
+          if (zalatwione) return;
+          if (ok) { zakoncz(u); return; }
+        }
+        if (!zalatwione) await powiedz('Możesz też dotknąć obrazka.');
+      } finally { wRozmowie = false; }
+    }
+    if (trybGlosowy) rozmowa();
+  });
+}
+
+function pokazMyslenie(tekst) {
+  pokaz('ekranPytanie');
+  $('#pytTekst').textContent = '';
+  $('#kafelki').hidden = true; $('#formTekst').hidden = true; $('#mikrofon').hidden = true; $('#gotowe').hidden = true;
+  $('#potw').hidden = true; $('#uslyszane').textContent = ''; $('#info').textContent = '';
+  $('#myslenie').hidden = false; $('#myslenieTekst').textContent = tekst;
+}
+
+function emojiZwierzat(tekst) {
+  const t = (tekst || '').toLowerCase();
+  const e = ZWIERZETA.filter(z => z.rdzen.test(t)).map(z => z.emoji).slice(0, 4);
+  return e.length ? e : ['🐰', '🐻'];
+}
+
+// ===== Claude API =====
+let AnthropicKlasa = null;
+async function klient() {
+  if (!AnthropicKlasa) AnthropicKlasa = (await import(SDK_URL)).default;
+  return new AnthropicKlasa({ apiKey: ust.klucz, dangerouslyAllowBrowser: true, maxRetries: 2 });
+}
+
+function promptPytan() {
+  return `Pomagasz zbudować bajkę na dobranoc dla dziecka w wieku ${ust.wiek} lat${ust.imie ? ` (ma na imię ${ust.imie})` : ''}. Dziecko powiedziało już, o jakich zwierzątkach ma być bajka.
+Wymyśl kolejne pytania do dziecka, które pomogą zbudować tę bajkę — np. gdzie dzieje się akcja, czego bohaterowie szukają, kogo spotkają, co lubią, jaka jest pogoda albo pora roku.
+Zasady:
+- 3 pytania, jeśli dziecko podało same zwierzątka; 2, jeśli powiedziało już coś więcej.
+- Pytania krótkie (do ośmiu słów), ciepłe, zrozumiałe dla ${ust.wiek}-latka, bez niczego strasznego.
+- Do każdego pytania 4 propozycje odpowiedzi (od jednego do trzech słów), każda z jednym pasującym emoji.
+- Nie pytaj o imię dziecka ani o zwierzątka (to już wiadomo).`;
+}
+
+function promptBajki() {
+  const imie = ust.imie;
+  const slowa = Math.round(ust.minuty * SLOW_NA_MINUTE / 50) * 50;
+  const ostatnie = historia.slice(0, 6).map(h => h.tytul).filter(Boolean);
+  return `Jesteś autorem łagodnych bajek na dobranoc. Bajkę przeczyta na głos syntezator mowy.
+Słuchacz: dziecko w wieku ${ust.wiek} lat${ust.imie ? `, ma na imię ${ust.imie}` : ''}.
+
+Treść:
+- Ciepło, bezpiecznie, z humorem i czułością. Proste słowa zrozumiałe dla ${ust.wiek}-latka, krótkie zdania.
+- Może pojawić się łagodny „zły” w stylu wilka z Trzech świnek, ale bez przemocy, ran, krwi, śmierci, porwań, gubienia się rodziców i bez długiego strachu. Kłopot rozwiązuje się sprytem, przyjaźnią albo pomocą, a „zły” na końcu odpuszcza albo staje się miły.
+- Bez straszenia ciemnością, potworami i złymi snami.
+- W drugiej połowie akcja zwalnia: robi się wieczór, wszyscy się wyciszają, jest coraz spokojniej.
+- Zakończenie: bohaterowie zasypiają albo „żyli długo i szczęśliwie”. ${ust.imie ? `Ostatnie zdanie: „Dobranoc, …” z imieniem ${imie} w wołaczu (np. Zosiu, Kasiu, Antku).` : 'Ostatnie zdanie: „Dobranoc.”'}
+${ust.imie ? `- Imię ${ust.imie} wpleć delikatnie raz albo dwa razy (np. bohaterowie mają przyjaciółkę o tym imieniu albo narrator zwraca się do słuchacza).\n` : ''}- Wykorzystaj odpowiedzi dziecka. Jeśli odpowiedź jest niezrozumiała albo „wszystko jedno”, wybierz sam.
+${ostatnie.length ? `- Wymyśl coś innego niż ostatnie bajki: ${ostatnie.join('; ')}.\n` : ''}
+Forma (tekst czyta maszyna):
+- Pierwsza linia: sam tytuł bajki, bez cudzysłowów i bez słowa „Tytuł”. Potem pusta linia i treść.
+- Bez nagłówków, list, gwiazdek, emoji i markdownu. Akapity oddzielaj pustą linią.
+- Liczby i godziny zapisuj słowami, bez skrótów.
+- Dialogi z myślnikiem. Wyrazy dźwiękonaśladowcze mile widziane (szu-szu, plum, chrup-chrup).
+- Długość: około ${slowa} słów (około ${ust.minuty} minut czytania).
+Zacznij od razu od tytułu.`;
+}
+
+const opisOdpowiedzi = odp => 'Odpowiedzi dziecka:\n' + odp.map(o => `- ${o.pytanie}: ${o.odpowiedz}`).join('\n');
+
+async function pobierzPytania(zw) {
+  const c = await klient();
+  const m = await c.beta.messages.create({
+    model: ust.model, max_tokens: 4000, betas: BETY, fallbacks: 'default',
+    output_config: { effort: 'low', format: { type: 'json_schema', schema: SCHEMAT_PYTAN } },
+    system: promptPytan(),
+    messages: [{ role: 'user', content: `Zwierzątka (słowa dziecka): ${zw}` }],
+  });
+  if (m.stop_reason === 'refusal') return null;
+  const txt = m.content.filter(b => b.type === 'text').map(b => b.text).join('');
+  const j = JSON.parse(txt);
+  return (j.pytania || []).filter(p => p.pytanie && p.propozycje && p.propozycje.length).slice(0, 3);
+}
+
+function opisBledu(e) {
+  const s = e && e.status;
+  const msg = (e && e.message) || String(e);
+  if (s === 401) return 'Klucz API jest nieprawidłowy — sprawdź go w ustawieniach (⚙️).';
+  if (s === 403) return 'Ten klucz nie ma dostępu do wybranego modelu.';
+  if (s === 429 || s === 529 || s === 503) return 'Serwer jest teraz zajęty. Spróbuj za chwilę.';
+  if (s === 400 && /credit|balance/i.test(msg)) return 'Na koncie API skończyły się środki.';
+  if (!s) return 'Brak internetu albo serwer nie odpowiada.';
+  return `Błąd ${s}: ${msg.slice(0, 160)}`;
+}
+
+// ===== opowiadanie: strumień tekstu → zdania → lektor =====
+let stan = null, ostatnieOdpowiedzi = null;
+
+function budz(s) { if (s.budzik) { const b = s.budzik; s.budzik = null; b(); } }
+function czekajNaTekst(s) { return new Promise(r => { s.budzik = r; setTimeout(r, 1000); }); }
+
+function wytnijZdania(s, final) {
+  const re = /[.!?…]+["'”»)]*\s+/g;
+  let m, ostatni = 0;
+  while ((m = re.exec(s.bufor))) {
+    const z = czysc(s.bufor.slice(ostatni, m.index + m[0].length));
+    if (/\p{L}/u.test(z)) s.kolejka.push(z);
+    ostatni = m.index + m[0].length;
+  }
+  s.bufor = s.bufor.slice(ostatni);
+  if (final && /\p{L}/u.test(s.bufor)) { s.kolejka.push(czysc(s.bufor)); s.bufor = ''; }
+  budz(s);
+}
+
+function dodaj(s, d, final = false) {
+  s.surowy += d;
+  if (!s.tytul) {
+    const nl = s.surowy.indexOf('\n');
+    if (nl < 0 && !final) return;
+    const linia = nl < 0 ? s.surowy : s.surowy.slice(0, nl);
+    s.tytul = czysc(linia).replace(/^tytu[łl]\s*:\s*/i, '').replace(/^["„”]|["„”]$/g, '') || 'Bajka na dobranoc';
+    s.tekstOd = nl < 0 ? s.surowy.length : nl + 1;
+    s.bufor = s.surowy.slice(s.tekstOd);
+  } else s.bufor += d;
+  wytnijZdania(s, final);
+}
+
+async function strumien(s) {
+  try {
+    const c = await klient();
+    const st = c.beta.messages.stream({
+      model: ust.model, max_tokens: 16000, betas: BETY, fallbacks: 'default',
+      output_config: { effort: 'low' },
+      system: promptBajki(),
+      messages: [{ role: 'user', content: opisOdpowiedzi(s.odpowiedzi) }],
+    });
+    s.anuluj = () => { try { st.abort(); } catch {} };
+    st.on('text', d => { if (!s.przerwane) dodaj(s, d); });
+    const m = await st.finalMessage();
+    if (m.stop_reason === 'refusal') s.blad = 'Model nie chciał napisać tej bajki. Spróbuj innych odpowiedzi.';
+  } catch (e) { if (!s.przerwane) { console.warn(e); s.blad = opisBledu(e); } }
+  dodaj(s, '', true); s.koniec = true; budz(s);
+  if (!s.blad && !s.przerwane && s.tytul && s.kolejka.length > 3) zapiszBajke(s);
+}
+
+function bajkaProbna(odp) {
+  const zw = (odp && odp[0] && odp[0].odpowiedz) || 'zajączek i miś';
+  const gdzie = (odp && odp[1] && odp[1].odpowiedz) || 'w lesie';
+  const imie = ust.imie || 'kochanie';
+  return `Wieczór na polanie
+
+Dawno, dawno temu, ${gdzie === 'wszystko jedno' ? 'w zielonym lesie' : gdzie}, mieszkali przyjaciele: ${zw}. Każdego dnia bawili się razem od rana aż do zachodu słońca.
+
+Pewnego popołudnia znaleźli na trawie małą, lśniącą gwiazdkę. — Ojej, spadła z nieba! — zawołali. — Musimy jej pomóc wrócić do domu.
+
+Szli powoli, tup, tup, tup, aż doszli na najwyższe wzgórze. Tam wiał ciepły wiaterek, szu-szu, i księżyc uśmiechał się do nich spokojnie.
+
+Podnieśli gwiazdkę wysoko, a ona mrugnęła, podziękowała i pofrunęła z powrotem na niebo.
+
+Przyjaciele usiedli w miękkiej trawie. Było cicho i ciepło. Ziewnęli raz, ziewnęli drugi raz, przytulili się do siebie i zasnęli, a gwiazdka świeciła nad nimi przez całą noc.
+
+Dobranoc, ${imie}.`;
+}
+
+async function symulujStrumien(s, tekst) {
+  for (let i = 0; i < tekst.length && !s.przerwane; i += 24) { dodaj(s, tekst.slice(i, i + 24)); await czekaj(40); }
+  dodaj(s, '', true); s.koniec = true; budz(s);
+}
+
+function wyciszanie(s) {
+  const wKolejce = s.kolejka.reduce((a, z) => a + liczSlowa(z), 0);
+  const calosc = s.koniec ? Math.max(1, wKolejce) : Math.max(s.cel, wKolejce);
+  const f = Math.min(1, Math.max(0, (s.slowa / calosc - 0.7) / 0.3));
+  return { glosnosc: 1 - 0.45 * f, tempo: ust.tempo * (1 - 0.12 * f) };
+}
+
+async function czytaj(s) {
+  while (!s.tytul && !s.koniec && !s.przerwane) await czekajNaTekst(s);
+  if (s.przerwane || (s.blad && !s.kolejka.length)) return;
+  $('#tytul').textContent = s.tytul;
+  await powiedz(s.tytul + '.');
+  let i = 0;
+  while (!s.przerwane) {
+    if (s.pauza) { await czekaj(300); continue; }
+    if (i < s.kolejka.length) {
+      const z = s.kolejka[i];
+      $('#zdanie').textContent = z;
+      await powiedz(z, wyciszanie(s));
+      if (s.pauza || s.przerwane) continue;      // po pauzie to samo zdanie od początku
+      s.slowa += liczSlowa(z); i++;
+    } else if (s.koniec) break;
+    else await czekajNaTekst(s);
+  }
+}
+
+async function opowiadaj({ odpowiedzi = null, emoji = ['🐰', '🐻'], gotowa = null }) {
+  if (stan) { stan.przerwane = true; if (stan.anuluj) stan.anuluj(); }
+  ostatnieOdpowiedzi = odpowiedzi;
+  pokaz('ekranBajka');
+  rysujScene($('#scenaBajki'), emoji, false);
+  $('#tytul').textContent = gotowa ? gotowa.tytul : 'Wymyślam bajkę…';
+  $('#zdanie').textContent = ''; $('#pauza').textContent = '⏸';
+  const s = stan = { tytul: '', surowy: '', tekstOd: 0, bufor: '', kolejka: [], koniec: false, blad: null, przerwane: false,
+    pauza: false, slowa: 0, cel: ust.minuty * SLOW_NA_MINUTE, budzik: null, anuluj: null, odpowiedzi, emoji };
+  if (gotowa) { s.tytul = gotowa.tytul; s.bufor = gotowa.tekst + '\n'; wytnijZdania(s, true); s.koniec = true; }
+  else {
+    if (trybGlosowy) powiedz('Już wymyślam bajkę. Ułóż się wygodnie.');
+    if (ust.klucz) strumien(s); else symulujStrumien(s, bajkaProbna(odpowiedzi));
+  }
+  await czytaj(s);
+  if (s.przerwane) return;
+  if (s.blad && s.slowa === 0) { pokazBlad(s.blad); return; }
+  if (s.blad) await powiedz('I na tym kończy się dzisiejsza bajka. Dobranoc.', { glosnosc: 0.6 });
+  await czekaj(1500);
+  if (!s.przerwane) zasypianie(emoji);
+}
+
+function zapiszBajke(s) {
+  historia.unshift({ id: Date.now(), tytul: s.tytul, tekst: s.surowy.slice(s.tekstOd).trim(), emoji: s.emoji, data: new Date().toISOString(), ulubiona: false });
+  // trzymamy 30 ostatnich + wszystkie ulubione
+  let zwykle = 0;
+  historia = historia.filter(h => h.ulubiona || ++zwykle <= 30);
+  zapiszHist();
+}
+
+function pokazBlad(tekst) {
+  pokaz('ekranBlad');
+  $('#bladTekst').textContent = tekst;
+  $('#bladZapisane').hidden = !historia.length;
+}
+
+// ===== zasypianie =====
+const NAZWY_SZUMU = { morze: '🌊 Szumi morze…', deszcz: '🌧️ Pada cichy deszczyk…', las: '🌲 Szumi las…' };
+function zasypianie(emoji) {
+  stan = null;
+  pokaz('ekranSen');
+  rysujScene($('#scenaSnu'), emoji, true);
+  const r = Szum.graj(MINUTY_SZUMU);
+  $('#senOpis').textContent = r ? NAZWY_SZUMU[r] : '';
+  $('#szumWl').textContent = r ? '🔇 Cisza' : '▶ Włącz szum';
+}
+
+// ===== dźwięki do snu, generowane na żywo (bez plików) =====
+const Szum = (() => {
+  let ctx = null, master = null, aktywne = [], timery = [], koniecT = null, grane = false;
+  const bufory = {};
+  function kontekst() {
+    if (!ctx) { const AC = window.AudioContext || window.webkitAudioContext; if (!AC) return null; ctx = new AC(); }
+    if (ctx.state === 'suspended') ctx.resume();
+    return ctx;
+  }
+  function odblokuj() {
+    const c = kontekst(); if (!c) return;
+    const b = c.createBuffer(1, 1, c.sampleRate), s = c.createBufferSource(); s.buffer = b; s.connect(c.destination); s.start();
+  }
+  // szum zapętlony bez trzasku: koniec płynnie przechodzi w początek
+  function bufor(rodzaj, sek = 12) {
+    const sr = ctx.sampleRate, n = sr * sek, m = Math.floor(sr * 0.5), g = new Float32Array(n + m);
+    let b0 = 0, b1 = 0, b2 = 0, b3 = 0, b4 = 0, b5 = 0, b6 = 0, br = 0;
+    for (let i = 0; i < n + m; i++) {
+      const w = Math.random() * 2 - 1;
+      if (rodzaj === 'bialy') g[i] = w * 0.5;
+      else if (rodzaj === 'rozowy') {
+        b0 = 0.99886 * b0 + w * 0.0555179; b1 = 0.99332 * b1 + w * 0.0750759; b2 = 0.969 * b2 + w * 0.153852;
+        b3 = 0.8665 * b3 + w * 0.3104856; b4 = 0.55 * b4 + w * 0.5329522; b5 = -0.7616 * b5 - w * 0.016898;
+        g[i] = (b0 + b1 + b2 + b3 + b4 + b5 + b6 + w * 0.5362) * 0.11; b6 = w * 0.115926;
+      } else { br = (br + 0.02 * w) / 1.02; g[i] = br * 3.5; }
+    }
+    const buf = ctx.createBuffer(1, n, sr), d = buf.getChannelData(0);
+    for (let i = 0; i < n; i++) d[i] = i < m ? g[i] * (i / m) + g[n + i] * (1 - i / m) : g[i];
+    return buf;
+  }
+  function zrodlo(rodzaj) {
+    const s = ctx.createBufferSource(); s.buffer = bufory[rodzaj] || (bufory[rodzaj] = bufor(rodzaj)); s.loop = true; s.start(); aktywne.push(s); return s;
+  }
+  const filtr = (typ, f, q = 0.7) => { const x = ctx.createBiquadFilter(); x.type = typ; x.frequency.value = f; x.Q.value = q; return x; };
+  const wzmocnienie = v => { const g = ctx.createGain(); g.gain.value = v; return g; };
+  const pozniej = (fn, ms) => timery.push(setTimeout(() => { if (grane) fn(); }, ms));
+  const rampa = (p, v, za) => { const t = ctx.currentTime; p.cancelScheduledValues(t); p.setValueAtTime(p.value, t); p.linearRampToValueAtTime(v, t + za); };
+
+  const DZWIEKI = {
+    morze(cel) {
+      const lp = filtr('lowpass', 500), g = wzmocnienie(0.3);
+      zrodlo('brazowy').connect(lp).connect(g).connect(cel);
+      const bp = filtr('bandpass', 2400, 0.5), g2 = wzmocnienie(0);
+      zrodlo('rozowy').connect(bp).connect(g2).connect(cel);
+      const fala = () => {
+        const dl = 6 + Math.random() * 5, t = ctx.currentTime;
+        g.gain.cancelScheduledValues(t); g.gain.setValueAtTime(g.gain.value, t);
+        g.gain.linearRampToValueAtTime(0.9, t + dl * 0.45); g.gain.linearRampToValueAtTime(0.22, t + dl);
+        lp.frequency.cancelScheduledValues(t); lp.frequency.setValueAtTime(lp.frequency.value, t);
+        lp.frequency.linearRampToValueAtTime(1100, t + dl * 0.45); lp.frequency.linearRampToValueAtTime(420, t + dl);
+        g2.gain.cancelScheduledValues(t); g2.gain.setValueAtTime(0, t);
+        g2.gain.linearRampToValueAtTime(0.1, t + dl * 0.5); g2.gain.linearRampToValueAtTime(0, t + dl * 0.9);
+        pozniej(fala, dl * 1000);
+      };
+      fala();
+    },
+    deszcz(cel) {
+      const g = wzmocnienie(0.55);
+      zrodlo('rozowy').connect(filtr('highpass', 450)).connect(filtr('lowpass', 6500)).connect(g).connect(cel);
+      const zmiana = () => { rampa(g.gain, 0.4 + Math.random() * 0.25, 4); pozniej(zmiana, 5000 + Math.random() * 4000); };
+      zmiana();
+      const biale = bufory.krople || (bufory.krople = (() => { const b = ctx.createBuffer(1, Math.floor(ctx.sampleRate * 0.04), ctx.sampleRate), d = b.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length); return b; })());
+      const kropla = () => {
+        const s = ctx.createBufferSource(); s.buffer = biale;
+        const gk = wzmocnienie(0.04 + Math.random() * 0.06);
+        s.connect(filtr('bandpass', 1800 + Math.random() * 3500, 4)).connect(gk).connect(cel); s.start();
+        pozniej(kropla, 30 + Math.random() * 140);
+      };
+      kropla();
+    },
+    las(cel) {
+      const bp = filtr('bandpass', 500, 0.6), g = wzmocnienie(0.4);
+      zrodlo('rozowy').connect(bp).connect(g).connect(cel);
+      const hp = filtr('highpass', 3200), g2 = wzmocnienie(0.03);
+      zrodlo('bialy').connect(hp).connect(g2).connect(cel);
+      const wiatr = () => {
+        const dl = 5 + Math.random() * 5, sila = Math.random();
+        rampa(bp.frequency, 300 + sila * 600, dl); rampa(g.gain, 0.25 + sila * 0.4, dl); rampa(g2.gain, 0.01 + sila * 0.04, dl);
+        pozniej(wiatr, dl * 1000);
+      };
+      wiatr();
+      // czasem cicho pohukuje sówka
+      const huhu = () => {
+        const t = ctx.currentTime;
+        for (const [start, dl] of [[0, 0.3], [0.5, 0.55]]) {
+          const o = ctx.createOscillator(), go = wzmocnienie(0);
+          o.type = 'sine'; o.frequency.setValueAtTime(390, t + start); o.frequency.linearRampToValueAtTime(330, t + start + dl);
+          go.gain.setValueAtTime(0, t + start); go.gain.linearRampToValueAtTime(0.035, t + start + 0.08); go.gain.linearRampToValueAtTime(0, t + start + dl);
+          o.connect(go).connect(cel); o.start(t + start); o.stop(t + start + dl + 0.05);
+        }
+        pozniej(huhu, 45000 + Math.random() * 60000);
+      };
+      pozniej(huhu, 20000 + Math.random() * 30000);
+    },
+  };
+
+  function graj(minuty = MINUTY_SZUMU, rodzaj = null) {
+    if (!kontekst()) return null;
+    zatrzymaj(true);
+    grane = true;
+    rodzaj = rodzaj || Object.keys(DZWIEKI)[Math.floor(Math.random() * 3)];
+    master = wzmocnienie(0); master.connect(ctx.destination);
+    DZWIEKI[rodzaj](master);
+    const t = ctx.currentTime, dl = minuty * 60, v = ust.szum;
+    master.gain.setValueAtTime(0, t); master.gain.linearRampToValueAtTime(v, t + 5);
+    master.gain.setValueAtTime(v, t + Math.max(6, dl - 60)); master.gain.linearRampToValueAtTime(0, t + dl);
+    koniecT = setTimeout(() => zatrzymaj(true), dl * 1000 + 500);
+    return rodzaj;
+  }
+  function zatrzymaj(szybko = false) {
+    grane = false; timery.forEach(clearTimeout); timery = []; clearTimeout(koniecT);
+    const m = master, a = aktywne; master = null; aktywne = [];
+    if (!m) return;
+    const t = ctx.currentTime, za = szybko ? 0.05 : 2;
+    m.gain.cancelScheduledValues(t); m.gain.setValueAtTime(m.gain.value, t); m.gain.linearRampToValueAtTime(0, t + za);
+    setTimeout(() => { a.forEach(s => { try { s.stop(); } catch {} }); m.disconnect(); }, za * 1000 + 100);
+  }
+  return { graj, zatrzymaj, odblokuj, gra: () => grane };
+})();
+
+// ===== scena (księżyc, gwiazdy, wzgórze, zwierzątka) =====
+function rysujScene(el, emoji, spia) {
+  let gw = '';
+  for (let i = 0; i < 26; i++) {
+    const x = Math.random() * 400, y = Math.random() * 150, r = 0.8 + Math.random() * 1.6;
+    gw += `<circle class="gwiazda" cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r.toFixed(1)}" fill="#fff8d6" style="animation-delay:${(Math.random() * 3).toFixed(2)}s"></circle>`;
+  }
+  const n = emoji.length, szer = 300 / Math.max(n, 1);
+  const zw = emoji.map((e, i) => {
+    const x = 50 + szer * (i + 0.5), y = 228 - Math.abs(i - (n - 1) / 2) * 6;
+    return `<text class="zwierzak" x="${x.toFixed(0)}" y="${y.toFixed(0)}" font-size="${n > 3 ? 40 : 48}" text-anchor="middle" style="animation-delay:${(i * 0.7).toFixed(1)}s">${e}</text>`;
+  }).join('');
+  const zzz = spia ? `<g fill="#e9e0ff" font-family="Nunito, sans-serif" font-weight="800">
+      <text class="zzz" x="250" y="170" font-size="18">z</text>
+      <text class="zzz" x="262" y="160" font-size="22" style="animation-delay:1.3s">z</text>
+      <text class="zzz" x="276" y="148" font-size="26" style="animation-delay:2.6s">Z</text></g>` : '';
+  el.innerHTML = `<svg viewBox="0 0 400 300" role="img" aria-label="Nocna polana ze zwierzątkami">
+    <defs>
+      <radialGradient id="poswiata"><stop offset="0" stop-color="#fff3c4" stop-opacity=".45"/><stop offset="1" stop-color="#fff3c4" stop-opacity="0"/></radialGradient>
+    </defs>
+    ${gw}
+    <circle cx="315" cy="70" r="70" fill="url(#poswiata)"/>
+    <g transform="translate(315 70)">
+      <circle r="34" fill="#fbefc6"/>
+      <path d="M-17 -2 q6 6 12 0" stroke="#b99a63" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <path d="M5 -2 q6 6 12 0" stroke="#b99a63" stroke-width="2.4" fill="none" stroke-linecap="round"/>
+      <circle cx="-17" cy="9" r="5" fill="#f3b6c8" opacity=".6"/><circle cx="17" cy="9" r="5" fill="#f3b6c8" opacity=".6"/>
+      <path d="M-5 13 q5 4 10 0" stroke="#b99a63" stroke-width="2" fill="none" stroke-linecap="round"/>
+    </g>
+    <g class="chmury" fill="#efe6ff" opacity=".22">
+      <ellipse cx="90" cy="70" rx="46" ry="14"/><ellipse cx="115" cy="60" rx="28" ry="14"/>
+      <ellipse cx="210" cy="115" rx="40" ry="11"/><ellipse cx="228" cy="107" rx="22" ry="11"/>
+    </g>
+    <path d="M0 250 Q100 190 200 230 T400 215 V300 H0 Z" fill="#8b7fb8" opacity=".55"/>
+    <path d="M0 270 Q120 215 230 248 T400 240 V300 H0 Z" fill="#9fcdbd" opacity=".55"/>
+    ${zw}
+    ${zzz}
+  </svg>`;
+}
+
+// ===== bramka dla rodzica =====
+function bramka() {
+  return new Promise(res => {
+    const a = 3 + Math.floor(Math.random() * 7), b = 4 + Math.floor(Math.random() * 6);
+    $('#bramkaPytanie').textContent = `Ile to ${a} + ${b}?`;
+    $('#bramkaOdp').value = '';
+    $('#bramka').classList.add('aktywny');
+    setTimeout(() => $('#bramkaOdp').focus(), 50);
+    const koniec = v => { $('#bramka').classList.remove('aktywny'); res(v); };
+    $('#bramkaOk').onclick = () => koniec(parseInt($('#bramkaOdp').value, 10) === a + b);
+    $('#bramkaAnuluj').onclick = () => koniec(false);
+  });
+}
+
+// ===== listy bajek =====
+const dataPl = iso => { try { return new Date(iso).toLocaleDateString('pl-PL', { day: 'numeric', month: 'long' }); } catch { return ''; } };
+function posortowane() { return [...historia].sort((x, y) => (y.ulubiona - x.ulubiona) || (y.id - x.id)); }
+
+function rysujListe(el, rodzic) {
+  el.innerHTML = '';
+  if (!historia.length) { el.innerHTML = '<p class="mala">Jeszcze nie ma zapisanych bajek.</p>'; return; }
+  for (const h of posortowane()) {
+    const w = document.createElement('div'); w.className = 'pozycja';
+    w.innerHTML = '<span class="em"></span><span class="nazwa"><span class="t"></span><small></small></span>';
+    w.querySelector('.em').textContent = (h.emoji && h.emoji[0]) || '📖';
+    w.querySelector('.t').textContent = h.tytul;
+    w.querySelector('small').textContent = dataPl(h.data);
+    const gw = document.createElement('button'); gw.textContent = h.ulubiona ? '⭐' : '☆'; gw.setAttribute('aria-label', 'Ulubiona');
+    gw.onclick = () => { h.ulubiona = !h.ulubiona; zapiszHist(); rysujListe(el, rodzic); };
+    w.appendChild(gw);
+    if (rodzic) {
+      const us = document.createElement('button'); us.textContent = '🗑'; us.setAttribute('aria-label', 'Usuń');
+      us.onclick = () => { historia = historia.filter(x => x !== h); zapiszHist(); rysujListe(el, rodzic); };
+      w.appendChild(us);
+    } else {
+      const gr = document.createElement('button'); gr.textContent = '▶️'; gr.setAttribute('aria-label', 'Czytaj');
+      gr.onclick = () => { odblokuj(); opowiadaj({ gotowa: h, emoji: h.emoji || ['📖'] }); };
+      w.appendChild(gr);
+    }
+    el.appendChild(w);
+  }
+}
+
+// ===== start i przyciski =====
+function odblokuj() { odblokujMowe(); Szum.odblokuj(); chceBlokady = true; nieGas(); }
+
+function ekranTrybu() {
+  Szum.zatrzymaj();
+  $('#powitanie').textContent = ust.imie ? `Dobry wieczór, ${ust.imie}!` : 'Dobry wieczór!';
+  const uwagi = [];
+  if (!ust.klucz) uwagi.push('Tryb próbny (bez klucza API) — bajka jest gotowa i krótka.');
+  if (!SR) uwagi.push('Ta przeglądarka nie rozpoznaje mowy — w trybie głosowym pytania są czytane, odpowiedź dotykiem.');
+  $('#trybInfo').textContent = uwagi.join(' ');
+  $('#doUlubionych').hidden = !historia.length;
+  pokaz('ekranTryb');
+}
+
+async function nowaBajka() {
+  const zw = await zapytaj({
+    pytanie: 'O jakich zwierzątkach ma być bajka?',
+    mowione: `${ust.imie ? `Cześć, ${ust.imie}! ` : ''}O jakich zwierzątkach ma być dzisiejsza bajka?`,
+    propozycje: ZWIERZETA, wielokrotny: true,
+  });
+  const odp = [{ pytanie: 'O jakich zwierzątkach ma być bajka', odpowiedz: zw }];
+  pokazMyslenie('Hmm… niech pomyślę');
+  if (trybGlosowy) powiedz('Hmm, niech pomyślę.');
+  let pytania = null;
+  if (ust.klucz) { try { pytania = await pobierzPytania(zw); } catch (e) { console.warn(e); } }
+  if (!pytania || !pytania.length) pytania = PYTANIA_ZAPASOWE;
+  for (const p of pytania) {
+    const o = await zapytaj({ pytanie: p.pytanie, propozycje: [...p.propozycje.slice(0, 4), { tekst: 'wszystko jedno', emoji: '🎲' }] });
+    odp.push({ pytanie: p.pytanie, odpowiedz: o });
+  }
+  await opowiadaj({ odpowiedzi: odp, emoji: emojiZwierzat(zw) });
+}
+
+function startTrybu(glos) { odblokuj(); trybGlosowy = glos; nowaBajka(); }
+$('#trybGlos').onclick = () => startTrybu(true);
+$('#trybCicho').onclick = () => startTrybu(false);
+
+$('#pauza').onclick = () => {
+  if (!stan) return;
+  stan.pauza = !stan.pauza;
+  $('#pauza').textContent = stan.pauza ? '▶️' : '⏸';
+  if (stan.pauza && 'speechSynthesis' in window) speechSynthesis.cancel();
+};
+$('#stop').onclick = () => {
+  if (stan) { stan.przerwane = true; if (stan.anuluj) stan.anuluj(); budz(stan); stan = null; }
+  if ('speechSynthesis' in window) speechSynthesis.cancel();
+  ekranTrybu();
+};
+$('#szumWl').onclick = () => {
+  if (Szum.gra()) { Szum.zatrzymaj(); $('#szumWl').textContent = '▶ Włącz szum'; $('#senOpis').textContent = ''; }
+  else { Szum.odblokuj(); const r = Szum.graj(MINUTY_SZUMU); $('#szumWl').textContent = '🔇 Cisza'; $('#senOpis').textContent = r ? NAZWY_SZUMU[r] : ''; }
+};
+$('#jeszczeRaz').onclick = () => ekranTrybu();
+$('#doUlubionych').onclick = () => { rysujListe($('#listaBajek'), false); pokaz('ekranUlubione'); };
+$('#ulubWroc').onclick = () => ekranTrybu();
+$('#bladPonow').onclick = () => { odblokuj(); opowiadaj({ odpowiedzi: ostatnieOdpowiedzi, emoji: emojiZwierzat(ostatnieOdpowiedzi && ostatnieOdpowiedzi[0].odpowiedz) }); };
+$('#bladZapisane').onclick = () => { rysujListe($('#listaBajek'), false); pokaz('ekranUlubione'); };
+$('#bladWroc').onclick = () => ekranTrybu();
+
+// pierwsze uruchomienie
+const wiekOpcje = sel => { for (let w = 2; w <= 10; w++) { const o = document.createElement('option'); o.value = w; o.textContent = `${w} lat${w < 5 ? 'a' : ''}`; sel.appendChild(o); } sel.value = ust.wiek; };
+wiekOpcje($('#powWiek')); wiekOpcje($('#ustWiek'));
+$('#powImie').value = ust.imie; $('#powKlucz').value = ust.klucz;
+$('#powStart').onclick = () => {
+  ust.imie = $('#powImie').value.trim(); ust.wiek = +$('#powWiek').value; ust.klucz = $('#powKlucz').value.trim(); ust.gotowe = true;
+  zapiszUst(); ekranTrybu();
+};
+
+// ustawienia
+function wypelnijUstawienia() {
+  $('#ustImie').value = ust.imie; $('#ustWiek').value = ust.wiek; $('#ustMinuty').value = ust.minuty;
+  $('#ustModel').value = ust.model; $('#ustKlucz').value = ust.klucz; $('#ustTempo').value = ust.tempo; $('#ustSzum').value = ust.szum;
+  zaladujGlosy();
+  rysujListe($('#listaUst'), true);
+}
+$('#doUstawien').onclick = async () => { if (await bramka()) { wypelnijUstawienia(); pokaz('ekranUstawienia'); } };
+const pola = { ustImie: v => ust.imie = v.trim(), ustWiek: v => ust.wiek = +v, ustMinuty: v => ust.minuty = +v, ustModel: v => ust.model = v,
+  ustKlucz: v => ust.klucz = v.trim(), ustTempo: v => ust.tempo = +v, ustSzum: v => ust.szum = +v, ustGlos: v => ust.glos = v };
+for (const [id, f] of Object.entries(pola)) $('#' + id).addEventListener('change', e => { f(e.target.value); zapiszUst(); });
+$('#testGlosu').onclick = () => { odblokujMowe(); powiedz(`Dawno, dawno temu, za siedmioma górami, mieszkał sobie mały jeżyk.`); };
+document.querySelectorAll('[data-szum]').forEach(b => b.onclick = () => { Szum.odblokuj(); Szum.graj(1, b.dataset.szum); });
+$('#szumTestStop').onclick = () => Szum.zatrzymaj();
+$('#ustWroc').onclick = () => { Szum.zatrzymaj(); ekranTrybu(); };
+$('#ustWyczysc').onclick = () => {
+  try { Object.keys(localStorage).filter(k => k.startsWith(PREFIKS)).forEach(k => localStorage.removeItem(k)); } catch {}
+  location.reload();
+};
+
+if (ust.gotowe) ekranTrybu(); else pokaz('ekranPowitanie');
+</script>
+</body>
+</html>
